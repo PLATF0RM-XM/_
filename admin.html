@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>لوحة الأدمن</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<h2>لوحة التحكم</h2>
+
+<input id="email" placeholder="إيميل الأدمن">
+<input id="password" type="password" placeholder="كلمة المرور">
+<button onclick="login()">تسجيل دخول</button>
+
+<hr>
+
+<input id="tradeId" placeholder="رقم الصفقة">
+<input id="name" placeholder="اسم المستثمر">
+<input id="phone" placeholder="رقم الهاتف">
+<input id="investment" placeholder="مبلغ الاستثمار">
+<input id="profit" placeholder="الربح">
+<input id="fees" placeholder="الرسوم">
+<input id="status" placeholder="الحالة">
+
+<button onclick="addTrade()">حفظ الصفقة</button>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+  authDomain: "investment-platform-b419d.firebaseapp.com",
+  projectId: "investment-platform-b419d",
+  storageBucket: "investment-platform-b419d.appspot.com",
+  messagingSenderId: "831226258536",
+  appId: "1:831226258536:web:6aae445cb9d33d06cd07dd",
+  measurementId: "G-BVHHWWF7DL"
+};
+
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+function login() {
+  auth.signInWithEmailAndPassword(email.value, password.value)
+  .then(()=>alert("تم تسجيل الدخول"))
+  .catch(e=>alert(e.message));
+}
+
+function addTrade() {
+  if(!auth.currentUser) {
+    alert("سجّل دخول الأول");
+    return;
+  }
+  db.collection("trades").doc(tradeId.value).set({
+    name: name.value,
+    phone: phone.value,
+    investment: investment.value,
+    profit: profit.value,
+    fees: fees.value,
+    status: status.value,
+    createdAt: new Date()
+  }).then(()=>alert("تم حفظ الصفقة"))
+    .catch(e=>alert(e.message));
+}
+</script>
+</body>
+</html>
