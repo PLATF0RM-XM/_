@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة التحكم</title>
+<style>
+body{font-family:Arial;background:#0b1c2d;color:#fff;padding:20px}
+input,select,button{width:100%;margin:6px 0;padding:10px}
+button{background:#1ecb6b;border:0;color:#000;font-weight:bold}
+table{width:100%;margin-top:20px;border-collapse:collapse}
+td,th{border:1px solid #444;padding:8px;text-align:center}
+</style>
+</head>
+<body>
+
+<h2>لوحة التحكم - إضافة صفقة</h2>
+
+<input id="tradeId" placeholder="رقم الصفقة">
+<input id="name" placeholder="اسم المستثمر">
+<input id="phone" placeholder="رقم الهاتف">
+<input id="investment" placeholder="مبلغ الاستثمار">
+<input id="profit" placeholder="الأرباح">
+<input id="fees" placeholder="الرسوم">
+<select id="status">
+  <option>قيد التنفيذ</option>
+  <option>بانتظار الرسوم</option>
+  <option>مكتملة</option>
+</select>
+<button onclick="saveTrade()">حفظ / تحديث الصفقة</button>
+
+<h3>كل الصفقات</h3>
+<table>
+<thead>
+<tr><th>رقم الصفقة</th><th>الاسم</th><th>الحالة</th><th>حذف</th></tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore,collection,addDoc,getDocs,deleteDoc,doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+ apiKey: "AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+ authDomain: "investment-platform-b419d.firebaseapp.com",
+ projectId: "investment-platform-b419d",
+ storageBucket: "investment-platform-b419d.appspot.com",
+ messagingSenderId: "831226258536",
+ appId: "1:831226258536:web:6aae445cb9d33d06cd07dd"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.saveTrade = async ()=>{
+ await addDoc(collection(db,"trades"),{
+  tradeId:tradeId.value,
+  name:name.value,
+  phone:phone.value,
+  investment:investment.value,
+  profit:profit.value,
+  fees:fees.value,
+  status:status.value,
+  created:new Date()
+ });
+ load();
+};
+
+window.del = async(id)=>{
+ await deleteDoc(doc(db,"trades",id));
+ load();
+}
+
+async function load(){
+ tbody.innerHTML="";
+ const s = await getDocs(collection(db,"trades"));
+ s.forEach(d=>{
+  const t=d.data();
+  tbody.innerHTML+=`<tr>
+   <td>${t.tradeId}</td>
+   <td>${t.name}</td>
+   <td>${t.status}</td>
+   <td><button onclick="del('${d.id}')">حذف</button></td>
+  </tr>`;
+ });
+}
+load();
+</script>
+</body>
+</html>
