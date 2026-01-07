@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة تحكم الإدارة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:linear-gradient(135deg,#081c3a,#0b2c5d);
+  color:#fff;
+}
+.container{
+  max-width:420px;
+  margin:80px auto;
+  background:rgba(255,255,255,0.1);
+  backdrop-filter:blur(12px);
+  padding:25px;
+  border-radius:16px;
+}
+input,button{
+  width:100%;
+  padding:14px;
+  margin:10px 0;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+}
+input{background:#fff;color:#000}
+button{background:#00b05c;color:#fff;font-weight:bold}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+th,td{
+  padding:10px;
+  border-bottom:1px solid rgba(255,255,255,.2);
+  text-align:center;
+}
+img{max-width:100%;border-radius:10px}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="login">
+  <h2 style="text-align:center">لوحة تحكم الإدارة</h2>
+  <input id="email" type="email" placeholder="البريد الإلكتروني">
+  <input id="password" type="password" placeholder="كلمة المرور">
+  <button onclick="login()">تسجيل الدخول</button>
+</div>
+
+<div class="container" id="panel" style="display:none">
+  <h3>الصفقات</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>رقم الصفقة</th>
+        <th>الاسم</th>
+        <th>إثبات التحويل</th>
+        <th>الحالة</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
+  <div style="background:#fff;padding:15px;border-radius:12px;max-width:90%">
+    <img id="proofImg">
+    <button onclick="closeModal()" style="margin-top:10px">إغلاق</button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+  authDomain: "investment-platform-b419d.firebaseapp.com",
+  projectId: "investment-platform-b419d",
+  storageBucket: "investment-platform-b419d.firebasestorage.app",
+  messagingSenderId: "831226258536",
+  appId: "1:831226258536:web:6aae445cb9d33d06cd07dd"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+function login(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value.trim();
+
+  auth.signInWithEmailAndPassword(email,password)
+  .then(()=>{
+    document.getElementById("login").style.display="none";
+    document.getElementById("panel").style.display="block";
+    loadDeals();
+  })
+  .catch(e=>alert("خطأ: "+e.message));
+}
+
+function loadDeals(){
+  db.collection("deals").onSnapshot(snap=>{
+    let html="";
+    snap.forEach(doc=>{
+      const d=doc.data();
+      html+=`<tr>
+        <td>${doc.id}</td>
+        <td>${d.name||""}</td>
+        <td><button onclick="viewProof('${doc.id}')">عرض</button></td>
+        <td>
+          <select onchange="db.collection('deals').doc('${doc.id}').update({status:this.value})">
+            <option ${d.status==="قيد المراجعة"?"selected":""}>قيد المراجعة</option>
+            <option ${d.status==="تم السداد"?"selected":""}>تم السداد</option>
+            <option ${d.status==="مرفوض"?"selected":""}>مرفوض</option>
+          </select>
+        </td>
+      </tr>`;
+    });
+    document.getElementById("rows").innerHTML=html;
+  });
+}
+
+function viewProof(id){
+  storage.ref("proofs/"+id+".jpg").getDownloadURL()
+  .then(url=>{
+    document.getElementById("proofImg").src=url;
+    document.getElementById("modal").style.display="flex";
+  })
+  .catch(()=>alert("لا يوجد إثبات تحويل"));
+}
+
+function closeModal(){
+  document.getElementById("modal").style.display="none";
+}
+</script>
+
+</body>
+</html>
