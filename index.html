@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>متابعة الصفقة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<style>
+body{
+ margin:0;
+ font-family:Arial, sans-serif;
+ background:linear-gradient(135deg,#081c3a,#0b2c5d);
+ color:#fff;
+}
+.container{
+ max-width:700px;
+ margin:60px auto;
+ background:rgba(255,255,255,0.12);
+ backdrop-filter:blur(14px);
+ padding:25px;
+ border-radius:18px;
+ box-shadow:0 20px 40px rgba(0,0,0,.35);
+}
+input,button{
+ width:100%;
+ padding:14px;
+ margin:10px 0;
+ border:none;
+ border-radius:12px;
+ font-size:16px;
+}
+input{background:#fff;color:#000}
+button{
+ background:#00b05c;
+ color:#fff;
+ font-weight:bold;
+}
+.data p{
+ margin:8px 0;
+}
+.status{
+ margin-top:12px;
+ padding:12px;
+ border-radius:12px;
+ text-align:center;
+ font-weight:bold;
+}
+.wait{background:#e67e22}
+.paid{background:#27ae60}
+.time{
+ margin-top:8px;
+ text-align:center;
+ font-size:14px;
+ opacity:.9;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+ <h2 style="text-align:center">متابعة الصفقة</h2>
+
+ <input id="dealId" placeholder="رقم الصفقة">
+ <button onclick="loadDeal()">عرض الصفقة</button>
+
+ <div id="result" style="display:none" class="data">
+  <p>اسم المستثمر: <b id="name"></b></p>
+  <p>مبلغ الاستثمار: <b id="investment"></b></p>
+  <p>رقم استلام الأرباح: <b id="profitNumber"></b></p>
+
+  <div id="feesBox" style="display:none">
+   <p>الرسوم المطلوبة لاستلام الأرباح: <b id="feeAmount"></b></p>
+   <div id="feeStatus" class="status"></div>
+   <div id="feeTime" class="time" style="display:none"></div>
+   <button id="payBtn" onclick="uploadProof()">سدد الآن</button>
+  </div>
+ </div>
+</div>
+
+<script>
+firebase.initializeApp({
+ apiKey:"AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+ authDomain:"investment-platform-b419d.firebaseapp.com",
+ projectId:"investment-platform-b419d",
+ storageBucket:"investment-platform-b419d.firebasestorage.app"
+});
+
+const db=firebase.firestore();
+const storage=firebase.storage();
+let currentDeal="";
+
+function loadDeal(){
+ currentDeal=dealId.value;
+ db.collection("deals").doc(currentDeal).get()
+ .then(doc=>{
+  if(!doc.exists){alert("رقم الصفقة غير موجود");return;}
+  const x=doc.data();
+  result.style.display="block";
+
+  name.innerText=x.investorName;
+  investment.innerText=x.investmentAmount;
+  profitNumber.innerText=x.profitNumber;
+
+  if(x.feesRequired){
+    feesBox.style.display="block";
+    feeAmount.innerText=x.feeAmount;
+
+    feeStatus.innerText=x.feeStatus;
+    feeStatus.className="status "+(x.feeStatus.includes("انتظار")?"wait":"paid");
+
+    if(x.feeTime){
+      feeTime.style.display="block";
+      feeTime.innerText="وقت السداد: "+x.feeTime;
+    }else{
+      feeTime.style.display="none";
+    }
+
+    payBtn.style.display = x.feeStatus==="في انتظار سداد الرسوم" ? "block" : "none";
+  }else{
+    feesBox.style.display="none";
+  }
+ })
+ .catch(()=>alert("حدث خطأ"));
+}
+
+function uploadProof(){
+ const i=document.createElement("input");
+ i.type="file";
+ i.accept="image/*";
+ i.onchange=async()=>{
+  const f=i.files[0];
+  if(!f)return;
+  await storage.ref("proofs/"+currentDeal+".jpg").put(f);
+  alert("تم رفع إثبات السداد بنجاح");
+ };
+ i.click();
+}
+</script>
+
+</body>
+</html>
