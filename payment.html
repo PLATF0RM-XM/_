@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>سداد رسوم الصفقة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body{font-family:Arial;background:#081c3a;color:#fff;padding:20px}
+.card{background:rgba(255,255,255,.12);padding:20px;border-radius:15px;max-width:500px;margin:auto}
+button{width:100%;padding:14px;margin:10px 0;border-radius:10px;border:none;font-size:16px}
+.whatsapp{background:#25D366;color:#fff;font-weight:bold}
+</style>
+</head>
+
+<body>
+<div class="card">
+<h3>سداد رسوم الصفقة</h3>
+<p>مبلغ الرسوم:</p>
+<h2 id="fees">---</h2>
+<p>التحويل على الرقم:</p>
+<h3 id="number">---</h3>
+
+<button class="whatsapp" onclick="sendWhatsApp()">إرسال إثبات السداد عبر واتساب</button>
+<p style="font-size:14px;opacity:.8">
+بعد فتح واتساب، قم بإرفاق صورة الإيصال يدويًا ثم الإرسال.
+</p>
+</div>
+
+<script>
+const firebaseConfig = {
+ apiKey: "AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+ authDomain: "investment-platform-b419d.firebaseapp.com",
+ databaseURL: "https://investment-platform-b419d-default-rtdb.firebaseio.com",
+ projectId: "investment-platform-b419d",
+ storageBucket: "investment-platform-b419d.firebasestorage.app",
+ messagingSenderId: "831226258536",
+ appId: "1:831226258536:web:df19777f6675a0e9cd07dd"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+const id=new URLSearchParams(location.search).get("dealId");
+let feesValue="", numberValue="";
+
+db.ref("deals/"+id).once("value").then(s=>{
+ const d=s.val();
+ feesValue = d.feesAmount;
+ numberValue = d.payoutNumber;
+ fees.innerText = feesValue + " جنيه";
+ number.innerText = numberValue;
+});
+
+function sendWhatsApp(){
+ const adminNumber = numberValue.replace(/\D/g,'');
+ const msg = `إثبات سداد رسوم الصفقة رقم ${id}%0Aمبلغ الرسوم: ${feesValue} جنيه`;
+ window.open(`https://wa.me/${adminNumber}?text=${msg}`,'_blank');
+}
+</script>
+</body>
+</html>
