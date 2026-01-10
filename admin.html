@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة تحكم الإدارة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<style>
+body{
+ margin:0;
+ font-family:Arial, sans-serif;
+ background:linear-gradient(135deg,#081c3a,#0b2c5d);
+ color:#fff;
+}
+.container{
+ max-width:720px;
+ margin:60px auto;
+ background:rgba(255,255,255,0.12);
+ backdrop-filter:blur(14px);
+ padding:25px;
+ border-radius:18px;
+ box-shadow:0 20px 40px rgba(0,0,0,.35);
+}
+input,button{
+ width:100%;
+ padding:14px;
+ margin:8px 0;
+ border:none;
+ border-radius:12px;
+}
+button{background:#00b05c;color:#fff;font-weight:bold}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="loginBox">
+ <h2>تسجيل دخول الإدارة</h2>
+ <input id="email" placeholder="البريد الإلكتروني">
+ <input id="password" type="password" placeholder="كلمة المرور">
+ <button id="loginBtn">دخول</button>
+</div>
+
+<div class="container" id="panelBox" style="display:none">
+ <h2>تم تسجيل الدخول بنجاح</h2>
+ <p>لوحة الأدمن شغالة ✔️</p>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+
+ firebase.initializeApp({
+  apiKey:"AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+  authDomain:"investment-platform-b419d.firebaseapp.com",
+  projectId:"investment-platform-b419d",
+  storageBucket:"investment-platform-b419d.firebasestorage.app"
+ });
+
+ const auth = firebase.auth();
+
+ const loginBox = document.getElementById("loginBox");
+ const panelBox = document.getElementById("panelBox");
+
+ document.getElementById("loginBtn").onclick = ()=>{
+  auth.signInWithEmailAndPassword(email.value,password.value)
+  .then(()=>{
+    loginBox.style.display="none";
+    panelBox.style.display="block";
+  })
+  .catch(e=>alert(e.message));
+ };
+
+});
+</script>
+
+</body>
+</html>
