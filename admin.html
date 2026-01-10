@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة الأدمن</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<style>
+body{font-family:Arial;background:#0b2c5d;color:#fff;padding:20px}
+.card{background:rgba(255,255,255,.12);padding:20px;border-radius:15px;max-width:800px;margin:auto}
+input,select,button{padding:8px;margin:4px;border-radius:6px;border:none}
+button{background:#00b05c;color:#fff;font-weight:bold}
+table{width:100%;margin-top:15px;border-collapse:collapse}
+td,th{border:1px solid #fff;padding:6px;text-align:center}
+a{color:#00ffcc}
+</style>
+</head>
+
+<body>
+<div id="loginBox" class="card">
+<h3>تسجيل دخول الأدمن</h3>
+<input id="email" placeholder="الإيميل">
+<input id="password" type="password" placeholder="كلمة السر">
+<button onclick="login()">دخول</button>
+</div>
+
+<div id="adminPanel" class="card" style="display:none">
+<h3>إضافة / تعديل صفقة</h3>
+<input id="dealId" placeholder="رقم الصفقة">
+<input id="investorName" placeholder="اسم المستثمر">
+<input id="investmentAmount" placeholder="مبلغ الاستثمار">
+<input id="payoutNumber" placeholder="رقم التحويل">
+
+<select id="feesEnabled">
+<option value="no">لا توجد رسوم</option>
+<option value="yes">توجد رسوم</option>
+</select>
+
+<input id="feesAmount" placeholder="مبلغ الرسوم">
+<button onclick="saveDeal()">حفظ</button>
+<button onclick="logout()" style="background:red">خروج</button>
+
+<h3>الصفقات</h3>
+<table>
+<thead>
+<tr><th>ID</th><th>الاسم</th><th>الحالة</th><th>إثبات</th><th>تحكم</th></tr>
+</thead>
+<tbody id="dealsTable"></tbody>
+</table>
+</div>
+
+<script>
+const firebaseConfig = {
+ apiKey: "AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+ authDomain: "investment-platform-b419d.firebaseapp.com",
+ databaseURL: "https://investment-platform-b419d-default-rtdb.firebaseio.com",
+ projectId: "investment-platform-b419d",
+ storageBucket: "investment-platform-b419d.firebasestorage.app",
+ messagingSenderId: "831226258536",
+ appId: "1:831226258536:web:df19777f6675a0e9cd07dd"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.database();
+
+auth.onAuthStateChanged(u=>{
+ if(u){loginBox.style.display="none";adminPanel.style.display="block";loadDeals();}
+});
+
+function login(){
+ auth.signInWithEmailAndPassword(email.value,password.value)
+ .catch(()=>alert("بيانات غير صحيحة"));
+}
+
+function logout(){auth.signOut();location.reload();}
+
+function saveDeal(){
+ const id = dealId.value.trim();
+ const name = investorName.value.trim();
+ const hasFees = feesEnabled.value === "yes";
+
+ // 🔒 منع الأرقام في اسم المستثمر
+ if(!id || !name){
+   alert("رقم الصفقة واسم المستثمر مطلوبين");
+   return;
+ }
+ if(/^[0-9]+$/.test(name)){
+   alert("❌ اسم المستثمر لا يمكن أن يكون أرقام فقط");
+   return;
+ }
+
+ db.ref("deals/" + id).set({
+  dealId: id,
+  investorName: name,
+  investmentAmount: investmentAmount.value,
+  payoutNumber: payoutNumber.value,
+  feesEnabled: hasFees,
+  feesAmount: hasFees ? feesAmount.value : "",
+  status: hasFees ? "في انتظار سداد الرسوم" : "تم السداد",
+  paymentTime: hasFees ? "" : new Date().toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit"}),
+  createdAt: new Date().toLocaleString("ar-EG")
+ }).then(()=>{
+   alert("✅ تم حفظ الصفقة");
+   loadDeals();
+ });
+}
+
+function loadDeals(){
+ dealsTable.innerHTML="";
+ db.ref("deals").once("value").then(s=>{
+  s.forEach(d=>{
+   const x=d.val();
+   dealsTable.innerHTML+=`
+   <tr>
+    <td>${x.dealId}</td>
+    <td>${x.investorName || "—"}</td>
+    <td>${x.status}</td>
+    <td>${x.paymentProof?`<a href="${x.paymentProof}" target="_blank">عرض</a>`:"—"}</td>
+    <td>${x.status==="قيد مراجعة السداد"?`<button onclick="approve('${x.dealId}')">تم السداد</button>`:""}</td>
+   </tr>`;
+  });
+ });
+}
+
+function approve(id){
+ const t=new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+ db.ref("deals/"+id).update({status:"تم السداد",paymentTime:t}).then(loadDeals);
+}
+</script>
+</body>
+</html>
