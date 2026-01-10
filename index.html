@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>متابعة الصفقة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body{
+  font-family:Arial;
+  background:#081c3a;
+  color:#fff;
+  padding:20px
+}
+.card{
+  background:rgba(255,255,255,.12);
+  padding:20px;
+  border-radius:15px;
+  max-width:500px;
+  margin:auto
+}
+input,button{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:8px;
+  border:none;
+  font-size:15px
+}
+button{
+  background:#00b05c;
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden
+}
+button.loading{
+  pointer-events:none;
+  background:#6c757d
+}
+button.success{
+  background:#0d6efd
+}
+.spinner{
+  display:none;
+  width:22px;
+  height:22px;
+  border:3px solid #fff;
+  border-top:3px solid transparent;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:auto
+}
+button.loading span{
+  display:none
+}
+button.loading .spinner{
+  display:block
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h3>متابعة الصفقة</h3>
+
+  <input id="searchId" placeholder="رقم الصفقة">
+  <button onclick="loadDeal()">عرض</button>
+
+  <div id="result" style="display:none">
+    <p>اسم المستثمر: <b id="name"></b></p>
+    <p>مبلغ الاستثمار: <b id="amount"></b></p>
+    <p>رقم استلام الأرباح: <b id="payout"></b></p>
+
+    <p id="feesBox">
+      رسوم الصفقة: <b id="fees"></b>
+    </p>
+
+    <p>الحالة: <b id="status"></b></p>
+    <p id="timeBox"></p>
+
+    <button id="payBtn" style="display:none" onclick="goPay(this)">
+      <span>سدد الآن</span>
+      <div class="spinner"></div>
+    </button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+ apiKey: "AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+ authDomain: "investment-platform-b419d.firebaseapp.com",
+ databaseURL: "https://investment-platform-b419d-default-rtdb.firebaseio.com",
+ projectId: "investment-platform-b419d",
+ storageBucket: "investment-platform-b419d.firebasestorage.app",
+ messagingSenderId: "831226258536",
+ appId: "1:831226258536:web:df19777f6675a0e9cd07dd"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let currentId = "";
+
+function loadDeal(){
+  currentId = searchId.value;
+
+  db.ref("deals/"+currentId).once("value").then(s=>{
+    if(!s.exists()){
+      alert("الصفقة غير موجودة");
+      return;
+    }
+
+    const d = s.val();
+    result.style.display="block";
+    name.innerText = d.investorName;
+    amount.innerText = d.investmentAmount;
+    payout.innerText = d.payoutNumber;
+    status.innerText = d.status;
+
+    if(d.feesEnabled){
+      feesBox.style.display="block";
+      fees.innerText = d.feesAmount + " جنيه";
+    }else{
+      feesBox.style.display="none";
+    }
+
+    payBtn.style.display =
+      d.status === "في انتظار سداد الرسوم" ? "block" : "none";
+
+    timeBox.innerText =
+      d.paymentTime ? "وقت السداد: " + d.paymentTime : "";
+  });
+}
+
+function goPay(btn){
+  btn.classList.add("loading");
+
+  setTimeout(()=>{
+    btn.classList.remove("loading");
+    btn.classList.add("success");
+    btn.querySelector("span").innerText="✔ جاري التحويل";
+
+    setTimeout(()=>{
+      window.location.href =
+        "payment_with_number.html?dealId=" + currentId;
+    },700);
+
+  },1200);
+}
+</script>
+
+</body>
+</html>
