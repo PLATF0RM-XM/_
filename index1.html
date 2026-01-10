@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>متابعة الصفقة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+body{font-family:Arial;background:#081c3a;color:#fff;padding:20px}
+.card{background:rgba(255,255,255,.12);padding:20px;border-radius:15px;max-width:500px;margin:auto}
+input,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:none;font-size:15px}
+button{background:#00b05c;color:#fff;font-weight:bold;cursor:pointer}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h3>متابعة الصفقة</h3>
+
+<input id="searchId" placeholder="رقم الصفقة">
+<button onclick="loadDeal()">عرض</button>
+
+<div id="result" style="display:none">
+<p>اسم المستثمر: <b id="name"></b></p>
+<p>مبلغ الاستثمار: <b id="amount"></b></p>
+<p>رقم استلام الأرباح: <b id="payout"></b></p>
+<p>رسوم الصفقة: <b id="fees"></b></p>
+<p>الحالة: <b id="status"></b></p>
+<p id="timeBox"></p>
+</div>
+</div>
+
+<script>
+const firebaseConfig = {
+ apiKey: "AIzaSyDCVCtl1ca3NSoy6tAWCp-ykgGBa21ZNp8",
+ authDomain: "investment-platform-b419d.firebaseapp.com",
+ databaseURL: "https://investment-platform-b419d-default-rtdb.firebaseio.com",
+ projectId: "investment-platform-b419d",
+ storageBucket: "investment-platform-b419d.firebasestorage.app",
+ messagingSenderId: "831226258536",
+ appId: "1:831226258536:web:df19777f6675a0e9cd07dd"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+function loadDeal(){
+ const id = searchId.value.trim();
+ if(!id) return;
+
+ db.ref("deals/"+id).once("value").then(s=>{
+  if(!s.exists()){
+    alert("الصفقة غير موجودة");
+    return;
+  }
+
+  const d = s.val();
+  result.style.display="block";
+
+  let foundName = "—";
+  let foundStatus = "—";
+
+  Object.keys(d).forEach(k=>{
+    if(typeof d[k] === "string"){
+      if(foundName === "—" && d[k].length > 2 && !k.match(/status|time|amount|fees|payout|deal/i)){
+        foundName = d[k];
+      }
+      if(foundStatus === "—" && (d[k].includes("سداد") || d[k].includes("تم"))){
+        foundStatus = d[k];
+      }
+    }
+  });
+
+  name.innerText = foundName;
+  status.innerText = foundStatus;
+  amount.innerText = d.investmentAmount || "—";
+  payout.innerText = d.payoutNumber || "—";
+  fees.innerText = d.feesAmount || "—";
+  timeBox.innerText = d.paymentTime ? "وقت السداد: "+d.paymentTime : "";
+ });
+}
+</script>
+
+</body>
+</html>
