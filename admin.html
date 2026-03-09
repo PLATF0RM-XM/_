@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة تحكم الإدارة | XM Platform</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c9a84c; --gold-light: #e8c97a; --dark: #05090f;
+  --dark2: #080d18; --dark3: #0d1525;
+  --text: #e8eaf0; --text-dim: #7a8aaa;
+  --green: #00d68f; --red: #ff4d6d;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Tajawal', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; }
+
+.bg-orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+.bg-orb-1 { width: 500px; height: 500px; background: rgba(10,30,80,0.5); top: -200px; right: -200px; }
+.bg-orb-2 { width: 300px; height: 300px; background: rgba(201,168,76,0.05); bottom: 0; left: -100px; }
+
+/* LOGIN */
+#loginWrap {
+  position: relative; z-index: 1;
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.login-card {
+  width: 100%; max-width: 400px;
+  background: linear-gradient(145deg, rgba(13,21,37,0.98), rgba(8,13,24,0.98));
+  border: 1px solid rgba(201,168,76,0.12);
+  border-radius: 24px; padding: 36px 28px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  position: relative;
+}
+.login-card::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 50%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.logo { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 28px; }
+.logo-icon { width: 42px; height: 42px; background: linear-gradient(135deg, var(--gold), var(--gold-light)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #000; }
+.logo-name { font-size: 16px; font-weight: 700; color: var(--gold-light); letter-spacing: 2px; }
+.logo-sub  { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; }
+.login-title { text-align: center; font-size: 18px; font-weight: 700; margin-bottom: 24px; }
+
+/* INPUTS */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.field input, .field select {
+  width: 100%; padding: 14px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 12px; color: var(--text);
+  font-family: 'Tajawal', sans-serif; font-size: 14px;
+  outline: none; transition: border-color .3s, background .3s;
+}
+.field input:focus, .field select:focus { border-color: rgba(201,168,76,0.5); background: rgba(201,168,76,0.04); }
+.field input::placeholder { color: var(--text-dim); }
+.field select option { background: #0d1525; }
+
+.btn-gold {
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, #b8860b, var(--gold), var(--gold-light));
+  border: none; border-radius: 12px;
+  color: #000; font-family: 'Tajawal', sans-serif;
+  font-size: 15px; font-weight: 700; letter-spacing: 1px;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.25);
+  margin-top: 6px;
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,168,76,0.4); }
+.btn-gold:active { transform: scale(.98); }
+
+.btn-danger {
+  width: 100%; padding: 14px;
+  background: rgba(255,77,109,0.1);
+  border: 1px solid rgba(255,77,109,0.3);
+  border-radius: 12px; color: var(--red);
+  font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all .2s; margin-top: 10px;
+}
+.btn-danger:hover { background: rgba(255,77,109,0.2); }
+
+/* PANEL */
+#panel { display: none; position: relative; z-index: 1; }
+
+.admin-header {
+  padding: 18px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(201,168,76,0.1);
+  background: rgba(5,9,15,0.9); backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 10;
+}
+.admin-header .logo { margin-bottom: 0; }
+
+.panel-body { max-width: 700px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.section-card {
+  background: linear-gradient(145deg, rgba(13,21,37,0.95), rgba(8,13,24,0.95));
+  border: 1px solid rgba(201,168,76,0.1);
+  border-radius: 20px; padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  position: relative; overflow: hidden;
+}
+.section-card::after {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 100px; height: 100px;
+  background: radial-gradient(circle, rgba(201,168,76,0.05), transparent 70%);
+  pointer-events: none;
+}
+.section-title {
+  font-size: 11px; font-weight: 700; color: var(--gold);
+  letter-spacing: 3px; text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201,168,76,0.3), transparent); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:500px) { .form-grid { grid-template-columns: 1fr; } }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  padding: 12px 14px; text-align: center;
+  font-size: 10px; letter-spacing: 2px; color: var(--gold);
+  text-transform: uppercase; border-bottom: 1px solid rgba(201,168,76,0.15);
+}
+td {
+  padding: 12px 14px; text-align: center;
+  font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+tr:hover td { background: rgba(201,168,76,0.03); }
+.btn-view {
+  background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2);
+  color: var(--gold-light); padding: 6px 14px; border-radius: 8px;
+  font-family: 'Tajawal', sans-serif; font-size: 12px;
+  cursor: pointer; transition: all .2s;
+}
+.btn-view:hover { background: rgba(201,168,76,0.2); }
+.status-select {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); padding: 6px 10px; border-radius: 8px;
+  font-family: 'Tajawal', sans-serif; font-size: 12px;
+  cursor: pointer; outline: none;
+}
+.status-select option { background: #0d1525; }
+.no-proof { font-size: 11px; color: var(--text-dim); }
+
+/* MODAL */
+#modal {
+  display: none; position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+  align-items: center; justify-content: center; padding: 20px;
+}
+.modal-inner {
+  background: var(--dark3); border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 20px; padding: 20px; max-width: 90%; max-height: 90vh;
+  overflow: auto; text-align: center;
+}
+.modal-inner img { max-width: 100%; max-height: 70vh; border-radius: 12px; }
+.btn-close {
+  margin-top: 14px; padding: 10px 28px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); border-radius: 10px;
+  font-family: 'Tajawal', sans-serif; font-size: 14px; cursor: pointer;
+}
+.btn-close:hover { background: rgba(255,255,255,0.15); }
+</style>
+</head>
+<body>
+
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-card">
+    <div class="logo">
+      <div class="logo-icon">X</div>
+      <div>
+        <div class="logo-name">XM PLATFORM</div>
+        <div class="logo-sub">ADMIN PANEL</div>
+      </div>
+    </div>
+    <div class="login-title">تسجيل الدخول</div>
+    <div class="field">
+      <label>البريد الإلكتروني</label>
+      <input id="email" type="email" placeholder="admin@example.com">
+    </div>
+    <div class="field">
+      <label>كلمة المرور</label>
+      <input id="password" type="password" placeholder="••••••••">
+    </div>
+    <button class="btn-gold" onclick="login()">دخول</button>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+  <div class="admin-header">
+    <div class="logo">
+      <div class="logo-icon">X</div>
+      <div>
+        <div class="logo-name">XM PLATFORM</div>
+        <div class="logo-sub">ADMIN</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-body">
+
+    <!-- Deal Form -->
+    <div class="section-card">
+      <div class="section-title">إدارة الصفقة</div>
+      <div class="form-grid">
+        <div class="field"><label>رقم الصفقة</label><input id="dealId" placeholder="DEAL-001"></div>
+        <div class="field"><label>اسم العميل</label><input id="name" placeholder="Mohamed Ahmed"></div>
+        <div class="field"><label>مبلغ الاستثمار</label><input id="investment" placeholder="1000" type="number"></div>
+        <div class="field"><label>الأرباح</label><input id="profit" placeholder="5000" type="number"></div>
+        <div class="field"><label>رقم الاستلام</label><input id="receipt" placeholder="01234567890"></div>
+        <div class="field"><label>مبلغ الإيداع</label><input id="fees" placeholder="500" type="number"></div>
+        <div class="field"><label>مدة السداد (دقايق)</label><input id="hours" placeholder="60" type="number"></div>
+        <div class="field">
+          <label>حالة الدفع</label>
+          <select id="paymentOpen">
+            <option value="true">✅ الدفع مفتوح</option>
+            <option value="false">🔒 الدفع مغلق</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-gold" onclick="saveDeal()">💾 حفظ / تعديل الصفقة</button>
+      <button class="btn-danger" onclick="deleteDeal()">🗑️ حذف الصفقة</button>
+    </div>
+
+    <!-- Deals Table -->
+    <div class="section-card">
+      <div class="section-title">جميع الصفقات</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>رقم الصفقة</th>
+              <th>الاسم</th>
+              <th>إثبات التحويل</th>
+              <th>الحالة</th>
+              <th>تعديل</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- Subscriptions Table -->
+    <div class="section-card">
+      <div class="section-title">طلبات الاشتراك</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>مبلغ الاشتراك</th>
+              <th>المبلغ المستلم</th>
+              <th>إثبات التحويل</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody id="subRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal">
+  <div class="modal-inner">
+    <img id="proofImg" src="" alt="إثبات التحويل">
+    <br>
+    <button class="btn-close" onclick="closeModal()">إغلاق</button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCQreNBjTck897PId442n2xKmHmmnjRbuE",
+  authDomain: "platform-xm.firebaseapp.com",
+  projectId: "platform-xm",
+  storageBucket: "platform-xm.firebasestorage.app",
+  messagingSenderId: "762614490463",
+  appId: "1:762614490463:web:59d233760c58817d88c2ea"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+function login() {
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  auth.signInWithEmailAndPassword(email, password)
+    .then(() => {
+      document.getElementById("loginWrap").style.display = "none";
+      document.getElementById("panel").style.display = "block";
+      loadDeals();
+    loadSubscriptions();
+    })
+    .catch(e => alert("خطأ: " + e.message));
+}
+
+
+function loadSubscriptions() {
+  db.collection("subscriptions").orderBy("createdAt","desc").onSnapshot(snap => {
+    let html = "";
+    snap.forEach(doc => {
+      const d = doc.data();
+      html += `<tr>
+        <td style="color:var(--gold-light);font-weight:700">${(d.amount||0).toLocaleString()} ج</td>
+        <td style="color:var(--green);font-weight:700">${(d.receive||0).toLocaleString()} ج</td>
+        <td>${d.paymentProof
+          ? `<button class="btn-view" onclick="viewProof('${d.paymentProof}')">عرض</button>`
+          : `<span class="no-proof">لا يوجد</span>`}</td>
+        <td>
+          <select class="status-select" onchange="db.collection('subscriptions').doc('${doc.id}').update({status:this.value})">
+            <option ${d.status==="في انتظار مراجعة الإدارة"?"selected":""}>في انتظار مراجعة الإدارة</option>
+            <option ${d.status==="تم القبول"?"selected":""}>تم القبول</option>
+            <option ${d.status==="مرفوض"?"selected":""}>مرفوض</option>
+          </select>
+        </td>
+      </tr>`;
+    });
+    document.getElementById("subRows").innerHTML = html || `<tr><td colspan="4" style="color:var(--text-dim);padding:30px">لا توجد طلبات</td></tr>`;
+  });
+}
+
+function loadDeals() {
+  db.collection("deals").onSnapshot(snap => {
+    let html = "";
+    snap.forEach(doc => {
+      const d = doc.data();
+      html += `<tr>
+        <td style="color:var(--gold-light);font-weight:700">${doc.id}</td>
+        <td>${d.name || "—"}</td>
+        <td>${d.paymentProof
+          ? `<button class="btn-view" onclick="viewProof('${d.paymentProof}')">عرض</button>`
+          : `<span class="no-proof">لا يوجد</span>`}</td>
+        <td>
+          <select class="status-select" onchange="updateStatus('${doc.id}', this.value)">
+            <option ${d.status==="في انتظار سداد مبلغ الإيداع"?"selected":""}>في انتظار سداد مبلغ الإيداع</option>
+            <option ${d.status==="في انتظار مراجعة الإدارة"?"selected":""}>في انتظار مراجعة الإدارة</option>
+            <option ${d.status==="قيد المراجعة"?"selected":""}>قيد المراجعة</option>
+            <option ${d.status==="قيد الانتظار"?"selected":""}>قيد الانتظار</option>
+            <option ${d.status==="الصفقة قيد الانتظار"?"selected":""}>الصفقة قيد الانتظار</option>
+            <option ${d.status==="تم السداد"?"selected":""}>تم السداد</option>
+            <option ${d.status==="مرفوض"?"selected":""}>مرفوض</option>
+          </select>
+        </td>
+        <td><button class="btn-view" onclick="fillForm('${doc.id}')">✏️ تعديل</button></td>
+      </tr>`;
+    });
+    document.getElementById("rows").innerHTML = html || `<tr><td colspan="5" style="color:var(--text-dim);padding:30px">لا توجد صفقات</td></tr>`;
+  });
+}
+
+function fillForm(id) {
+  db.collection("deals").doc(id).get().then(doc => {
+    if (!doc.exists) return;
+    const d = doc.data();
+    document.getElementById("dealId").value     = id;
+    document.getElementById("name").value        = d.name        || "";
+    document.getElementById("investment").value  = d.investment  || "";
+    document.getElementById("profit").value      = d.profit      || "";
+    document.getElementById("receipt").value     = d.receipt     || "";
+    document.getElementById("fees").value        = d.fees        || "";
+    document.getElementById("hours").value       = d.deadlineMinutes || (d.deadlineHours ? d.deadlineHours * 60 : "");
+    document.getElementById("paymentOpen").value = d.paymentOpen ? "true" : "false";
+
+    // Scroll up to form
+    document.getElementById("dealId").scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("dealId").focus();
+  });
+}
+
+function updateStatus(id, value) {
+  db.collection("deals").doc(id).update({ status: value });
+}
+
+function viewProof(url) {
+  document.getElementById("proofImg").src = url;
+  document.getElementById("modal").style.display = "flex";
+}
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function saveDeal() {
+  const id = document.getElementById("dealId").value.trim();
+  if (!id) return alert("ادخل رقم الصفقة");
+  db.collection("deals").doc(id).set({
+    dealId:        id,
+    name:          document.getElementById("name").value,
+    investment:    Number(document.getElementById("investment").value),
+    profit:        Number(document.getElementById("profit").value),
+    fees:          Number(document.getElementById("fees").value),
+    receipt:       document.getElementById("receipt").value,
+    deadlineMinutes: Number(document.getElementById("hours").value),
+    paymentOpen:   document.getElementById("paymentOpen").value === "true",
+    status:        "في انتظار سداد مبلغ الإيداع",
+    paymentStart:  firebase.firestore.FieldValue.serverTimestamp(),
+    createdAt:     firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).then(() => alert("✅ تم حفظ الصفقة"));
+}
+
+function deleteDeal() {
+  const id = document.getElementById("dealId").value.trim();
+  if (!id) return;
+  if (!confirm("متأكد من حذف الصفقة؟")) return;
+  db.collection("deals").doc(id).delete().then(() => alert("🗑️ تم حذف الصفقة"));
+}
+</script>
+</body>
+</html>
