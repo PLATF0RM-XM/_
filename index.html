@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Platform</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dim: rgba(201,168,76,0.15);
+  --dark: #05090f;
+  --dark2: #080d18;
+  --dark3: #0d1525;
+  --blue-deep: #0a1628;
+  --text: #e8eaf0;
+  --text-dim: #7a8aaa;
+  --green: #00d68f;
+  --red: #ff4d6d;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background: var(--dark);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== LOADER ===== */
+#loader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--dark);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+}
+.loader-ring {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--gold);
+  border-right-color: var(--gold-light);
+  animation: spin 1s linear infinite;
+}
+.loader-text {
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  text-transform: uppercase;
+  opacity: .7;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== BG EFFECTS ===== */
+.bg-orb {
+  position: fixed; border-radius: 50%;
+  filter: blur(120px); pointer-events: none; z-index: 0;
+}
+.bg-orb-1 { width: 500px; height: 500px; background: rgba(10,30,80,0.6); top: -150px; right: -150px; }
+.bg-orb-2 { width: 400px; height: 400px; background: rgba(201,168,76,0.04); bottom: 100px; left: -100px; }
+
+/* ===== HEADER ===== */
+header {
+  position: relative; z-index: 10;
+  padding: 20px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(201,168,76,0.1);
+  background: rgba(5,9,15,0.8);
+  backdrop-filter: blur(20px);
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 900; color: #000;
+}
+.logo-text { font-size: 17px; font-weight: 700; color: var(--gold-light); letter-spacing: 1px; }
+.logo-sub  { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; }
+
+.lang-select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(201,168,76,0.2);
+  color: var(--gold-light);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ===== BANNER ===== */
+.banner {
+  position: relative; z-index: 1;
+  height: 240px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 0%, var(--dark) 100%);
+  z-index: 2;
+}
+.banner-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(120deg, #050912, #0c1e42, #050912);
+}
+.banner img {
+  position: relative; z-index: 1;
+  max-width: 45%; max-height: 180px;
+  object-fit: contain;
+  animation: float 7s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px rgba(201,168,76,0.2));
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+/* ===== MAIN CONTENT ===== */
+main {
+  position: relative; z-index: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 16px 60px;
+}
+
+/* ===== STATS ===== */
+.stats {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 12px; margin: 28px 0;
+}
+.stat-card {
+  background: linear-gradient(145deg, rgba(13,21,37,0.9), rgba(8,13,24,0.9));
+  border: 1px solid rgba(201,168,76,0.12);
+  border-radius: 16px;
+  padding: 18px 12px;
+  text-align: center;
+  position: relative; overflow: hidden;
+  transition: transform .3s, border-color .3s;
+}
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.stat-card:hover { transform: translateY(-3px); border-color: rgba(201,168,76,0.3); }
+.stat-num {
+  font-size: 22px; font-weight: 900;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
+
+/* ===== DIVIDER ===== */
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 24px 0;
+}
+.divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent); }
+.divider-text { font-size: 11px; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; }
+
+/* ===== CARDS ===== */
+.card {
+  background: linear-gradient(145deg, rgba(13,21,37,0.95), rgba(8,13,24,0.95));
+  border: 1px solid rgba(201,168,76,0.1);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  position: relative; overflow: hidden;
+}
+.card::after {
+  content: '';
+  position: absolute; top: 0; right: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(201,168,76,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ===== INPUT ===== */
+.input-wrap { position: relative; margin-top: 4px; }
+.input-wrap input {
+  width: 100%; padding: 15px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Tajawal', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color .3s, background .3s;
+}
+.input-wrap input:focus {
+  border-color: rgba(201,168,76,0.5);
+  background: rgba(201,168,76,0.04);
+}
+.input-wrap input::placeholder { color: var(--text-dim); }
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  width: 100%; padding: 16px;
+  margin-top: 14px;
+  background: linear-gradient(135deg, #b8860b, var(--gold), var(--gold-light));
+  border: none; border-radius: 12px;
+  color: #000; font-family: 'Tajawal', sans-serif;
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; letter-spacing: 1px;
+  transition: opacity .2s, transform .2s, box-shadow .2s;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.25);
+  position: relative; overflow: hidden;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0; transition: opacity .2s;
+}
+.btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(201,168,76,0.35); }
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary:active { transform: scale(.98); }
+
+.btn-pay {
+  width: 100%; padding: 16px;
+  margin-top: 14px;
+  background: linear-gradient(135deg, #006635, var(--green));
+  border: none; border-radius: 12px;
+  color: #fff; font-family: 'Tajawal', sans-serif;
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; letter-spacing: 1px;
+  transition: all .2s;
+  box-shadow: 0 4px 20px rgba(0,214,143,0.2);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-pay:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,214,143,0.35); }
+.btn-pay:active { transform: scale(.98); }
+
+/* ===== DETAILS ROWS ===== */
+.detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-label { font-size: 13px; color: var(--text-dim); }
+.detail-value { font-size: 15px; font-weight: 600; color: var(--text); }
+
+/* ===== STATUS ===== */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 50px;
+  font-size: 13px; font-weight: 700;
+  margin-top: 16px; width: 100%;
+  justify-content: center;
+}
+.status-waiting  { background: rgba(201,168,76,0.1); color: var(--gold-light); border: 1px solid rgba(201,168,76,0.2); }
+.status-pending  { background: rgba(0,150,255,0.1); color: #60b4ff; border: 1px solid rgba(0,150,255,0.2); }
+.status-hold     { background: rgba(160,100,255,0.1); color: #c084fc; border: 1px solid rgba(160,100,255,0.2); }
+.status-paid     { background: rgba(0,214,143,0.1); color: var(--green); border: 1px solid rgba(0,214,143,0.2); }
+.status-rejected { background: rgba(255,77,109,0.1); color: var(--red); border: 1px solid rgba(255,77,109,0.2); }
+
+/* ===== FEE BOX ===== */
+.fee-box {
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.fee-label { font-size: 13px; color: var(--text-dim); }
+.fee-amount { font-size: 20px; font-weight: 900; color: var(--gold-light); }
+
+/* ===== SECTION TITLE ===== */
+.section-title {
+  font-size: 11px; font-weight: 700;
+  color: var(--gold); letter-spacing: 3px;
+  text-transform: uppercase; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(201,168,76,0.3), transparent);
+}
+
+/* ===== COUNTDOWN ===== */
+.countdown-box {
+  background: rgba(255,77,109,0.06);
+  border: 1px solid rgba(255,77,109,0.2);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.countdown-label {
+  font-size: 11px; color: var(--text-dim);
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+}
+.countdown-timer {
+  display: flex; justify-content: center; gap: 12px;
+}
+.timer-unit {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(255,77,109,0.08);
+  border: 1px solid rgba(255,77,109,0.15);
+  border-radius: 10px; padding: 10px 14px; min-width: 56px;
+}
+.timer-num {
+  font-size: 26px; font-weight: 900;
+  color: #ff4d6d; line-height: 1;
+}
+.timer-lbl { font-size: 10px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
+.expired-box {
+  background: rgba(255,77,109,0.08);
+  border: 1px solid rgba(255,77,109,0.2);
+  border-radius: 12px; padding: 14px;
+  text-align: center; color: #ff4d6d;
+  font-size: 14px; font-weight: 700;
+}
+.closed-box {
+  background: rgba(255,77,109,0.08);
+  border: 1px solid rgba(255,77,109,0.25);
+  border-radius: 12px; padding: 16px;
+  text-align: center; color: #ff4d6d;
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+
+
+/* ===== TWO BUTTONS ROW ===== */
+.btn-row {
+  display: flex; flex-direction: row;
+  gap: 10px; margin-top: 14px; align-items: stretch;
+}
+.btn-secondary {
+  width: 100%; padding: 11px;
+  background: transparent;
+  border: 1px solid rgba(0,214,143,0.35);
+  border-radius: 12px;
+  color: var(--green); font-family: 'Tajawal', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px;
+  transition: all .2s;
+}
+.btn-secondary:hover { background: rgba(0,214,143,0.06); border-color: rgba(0,214,143,0.6); }
+.btn-secondary:active { transform: scale(.98); }
+
+/* ===== ADD DEAL MODAL ===== */
+#addDealModal {
+  display: none; position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+  align-items: center; justify-content: center; padding: 20px;
+  overflow-y: auto;
+}
+.modal-card {
+  background: linear-gradient(145deg, rgba(13,21,37,0.99), rgba(8,13,24,0.99));
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 24px; padding: 28px 24px;
+  width: 100%; max-width: 460px;
+  position: relative;
+}
+.modal-card::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 50%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.modal-title {
+  font-size: 18px; font-weight: 700; margin-bottom: 20px;
+  text-align: center; color: var(--gold-light);
+}
+.modal-field { margin-bottom: 14px; }
+.modal-field label { display: block; font-size: 11px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 7px; }
+.modal-field input {
+  width: 100%; padding: 13px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 12px; color: var(--text);
+  font-family: 'Tajawal', sans-serif; font-size: 14px;
+  outline: none; transition: border-color .3s;
+}
+.modal-field input:focus { border-color: rgba(201,168,76,0.5); }
+.modal-field input::placeholder { color: var(--text-dim); }
+
+/* mini packages inside modal */
+.mini-pkgs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.mini-pkg {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(201,168,76,0.1);
+  border-radius: 10px; padding: 10px 8px;
+  text-align: center; cursor: pointer; transition: all .2s;
+}
+.mini-pkg:hover { border-color: rgba(201,168,76,0.4); }
+.mini-pkg.sel { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+.mini-pkg .mp { font-size: 15px; font-weight: 900; color: var(--gold-light); }
+.mini-pkg .mr { font-size: 12px; color: var(--green); margin-top: 2px; }
+
+/* deal id result */
+.deal-result {
+  background: rgba(0,214,143,0.06);
+  border: 1px solid rgba(0,214,143,0.2);
+  border-radius: 14px; padding: 20px;
+  text-align: center; margin-top: 16px;
+}
+.deal-result-label { font-size: 12px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 8px; }
+.deal-result-id {
+  font-size: 28px; font-weight: 900;
+  color: var(--gold-light); letter-spacing: 4px;
+}
+.deal-result-note { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+
+.btn-close-modal {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(255,255,255,0.07); border: none;
+  color: var(--text-dim); width: 32px; height: 32px;
+  border-radius: 50%; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ===== PACKAGES ===== */
+.packages-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-top: 4px;
+}
+.pkg-card {
+  background: linear-gradient(145deg, rgba(13,21,37,0.95), rgba(8,13,24,0.95));
+  border: 1px solid rgba(201,168,76,0.12);
+  border-radius: 16px; padding: 16px 12px;
+  text-align: center; cursor: pointer;
+  transition: all .3s; position: relative; overflow: hidden;
+}
+.pkg-card::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.pkg-card:hover { transform: translateY(-3px); border-color: rgba(201,168,76,0.4); box-shadow: 0 8px 30px rgba(201,168,76,0.1); }
+.pkg-card.selected { border-color: var(--gold); background: linear-gradient(145deg, rgba(201,168,76,0.08), rgba(8,13,24,0.95)); box-shadow: 0 0 20px rgba(201,168,76,0.15); }
+.pkg-card.selected::after { content: '✓'; position: absolute; top: 8px; left: 10px; color: var(--gold); font-weight: 900; font-size: 14px; }
+.pkg-price { font-size: 20px; font-weight: 900; color: var(--gold-light); margin-bottom: 4px; }
+.pkg-arrow { font-size: 12px; color: var(--text-dim); margin: 4px 0; }
+.pkg-receive { font-size: 16px; font-weight: 700; color: var(--green); }
+.pkg-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
+.pkg-popular {
+  position: absolute; top: 8px; right: 8px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: #000; font-size: 9px; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px; letter-spacing: 1px;
+}
+.note-box {
+  background: rgba(0,214,143,0.05);
+  border: 1px solid rgba(0,214,143,0.15);
+  border-radius: 12px; padding: 12px 16px;
+  text-align: center; margin-top: 14px;
+  font-size: 13px; color: var(--green);
+}
+.btn-subscribe {
+  width: 100%; padding: 16px; margin-top: 14px;
+  background: linear-gradient(135deg, #006635, var(--green));
+  border: none; border-radius: 12px;
+  color: #fff; font-family: 'Tajawal', sans-serif;
+  font-size: 16px; font-weight: 700; letter-spacing: 1px;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 4px 20px rgba(0,214,143,0.2);
+  display: none;
+}
+.btn-subscribe:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,214,143,0.35); }
+.btn-subscribe:active { transform: scale(.98); }
+
+/* ===== FOOTER ===== */
+footer {
+  text-align: center; padding: 30px 20px;
+  color: var(--text-dim); font-size: 11px;
+  letter-spacing: 1px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  position: relative; z-index: 1;
+}
+
+/* ===== ANIMATIONS ===== */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+@media(max-width:480px) {
+  .stat-num { font-size: 18px; }
+  .banner img { max-width: 65%; }
+}
+</style>
+</head>
+<body>
+
+<!-- Background orbs -->
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<!-- Loader -->
+<div id="loader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">XM Platform</div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">X</div>
+    <div>
+      <div class="logo-text">XM PLATFORM</div>
+      <div class="logo-sub">INVESTMENT</div>
+    </div>
+  </div>
+  <select class="lang-select" onchange="setLang(this.value)">
+    <option value="ar">🌐 AR</option>
+    <option value="en">🌐 EN</option>
+  </select>
+</header>
+
+<!-- Banner -->
+<div class="banner">
+  <div class="banner-bg"></div>
+  <img src="IMG_7211.webp" alt="XM Platform">
+</div>
+
+<!-- Main -->
+<main>
+
+  <!-- Stats -->
+  <div class="stats reveal">
+    <div class="stat-card">
+      <div class="stat-num" id="acc">0</div>
+      <div class="stat-label">Accounts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="trades">0</div>
+      <div class="stat-label">Trades</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="profitCounter">0</div>
+      <div class="stat-label">Profit $</div>
+    </div>
+  </div>
+
+  <div class="divider reveal">
+    <div class="divider-line"></div>
+    <div class="divider-text" id="dividerText">متابعة الصفقة</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- Search Card -->
+  <div class="card reveal">
+    <div class="section-title" id="sectionSearch">البحث</div>
+    <div class="input-wrap">
+      <input id="dealInput" type="text">
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="loadDeal()" id="trackBtn" style="flex:1">متابعة الصفقة</button>
+      <button class="btn-secondary" onclick="openAddDeal()" style="flex:1">➕ إضافة صفقة</button>
+    </div>
+  </div>
+
+  <!-- Details Card -->
+  <div class="card reveal" id="details" style="display:none">
+    <div class="section-title" id="sectionDetails">تفاصيل الصفقة</div>
+    <div class="detail-row">
+      <span class="detail-label" id="lblName">اسم المستثمر</span>
+      <span class="detail-value" id="nameVal"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label" id="lblInv">مبلغ الاستثمار</span>
+      <span class="detail-value" id="investmentVal"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label" id="lblProfit">الأرباح</span>
+      <span class="detail-value" id="profitVal"></span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label" id="lblReceipt">رقم الاستلام</span>
+      <span class="detail-value" id="receiptVal"></span>
+    </div>
+    <div id="statusBox" class="status-badge status-waiting"></div>
+  </div>
+
+  <!-- Payment Card -->
+  <div class="card reveal" id="payCard" style="display:none">
+    <div class="section-title" id="sectionPay">السداد</div>
+
+    <!-- Closed Payment -->
+    <div class="closed-box" id="closedBox" style="display:none">
+      🔒 الدفع مغلق الآن — تواصل مع الإدارة
+    </div>
+
+    <!-- Countdown Timer -->
+    <div class="countdown-box" id="countdownBox" style="display:none">
+      <div class="countdown-label">⏳ الوقت المتبقي للسداد</div>
+      <div class="countdown-timer">
+        <div class="timer-unit"><div class="timer-num" id="timerH">00</div><div class="timer-lbl">ساعة</div></div>
+        <div class="timer-unit"><div class="timer-num" id="timerM">00</div><div class="timer-lbl">دقيقة</div></div>
+        <div class="timer-unit"><div class="timer-num" id="timerS">00</div><div class="timer-lbl">ثانية</div></div>
+      </div>
+    </div>
+
+    <!-- Expired -->
+    <div class="expired-box" id="expiredBox" style="display:none">
+      ⛔ انتهى وقت السداد — تواصل مع الإدارة
+    </div>
+
+    <div class="fee-box" id="feeBox">
+      <span class="fee-label" id="feeLabel">مبلغ الإيداع</span>
+      <span class="fee-amount" id="feeText">—</span>
+    </div>
+    <button class="btn-pay" id="payBtn" onclick="goToPayment()">
+      <span>💳</span>
+      <span>سدد مبلغ الإيداع</span>
+    </button>
+  </div>
+
+
+
+
+
+</main>
+
+<footer id="footer">هذه المنصة مخصصة للاشتراك وعرض حالة الصفقات</footer>
+
+<script>
+// ===== Translations =====
+const text = {
+  ar: {
+    dir:"rtl", title:"XM PLATFORM", deal:"أدخل رقم الصفقة", track:"متابعة الصفقة",
+    name:"اسم المستثمر", inv:"مبلغ الاستثمار", profit:"الأرباح", receipt:"رقم الاستلام",
+    footer:"هذه المنصة مخصصة للاشتراك وعرض حالة الصفقات",
+    fees:"مبلغ الإيداع", search:"البحث", details:"تفاصيل الصفقة", pay:"السداد",
+    trackDiv:"متابعة الصفقة", payBtn:"سدد مبلغ الإيداع"
+  },
+  en: {
+    dir:"ltr", title:"XM PLATFORM", deal:"Enter Trade Number", track:"Track Trade",
+    name:"Investor", inv:"Investment", profit:"Profit", receipt:"Receipt No.",
+    footer:"This platform is for subscriptions and trade status tracking",
+    fees:"Deposit Amount", search:"SEARCH", details:"TRADE DETAILS", pay:"PAYMENT",
+    trackDiv:"Track Your Trade", payBtn:"Pay Deposit"
+  }
+};
+
+function setLang(l) {
+  localStorage.lang = l;
+  document.documentElement.lang = l;
+  document.documentElement.dir = text[l].dir;
+  document.getElementById("dealInput").placeholder = text[l].deal;
+  document.getElementById("trackBtn").innerText    = text[l].track;
+  document.getElementById("lblName").innerText     = text[l].name;
+  document.getElementById("lblInv").innerText      = text[l].inv;
+  document.getElementById("lblProfit").innerText   = text[l].profit;
+  document.getElementById("lblReceipt").innerText  = text[l].receipt;
+  document.getElementById("footer").innerText      = text[l].footer;
+  document.getElementById("sectionSearch").childNodes[0] && (document.getElementById("sectionSearch").firstChild.textContent = text[l].search);
+  document.getElementById("dividerText").innerText = text[l].trackDiv;
+  document.getElementById("feeLabel").innerText    = text[l].fees;
+  document.querySelector("#payCard .btn-pay span:last-child").innerText = text[l].payBtn;
+}
+const autoLang = localStorage.lang || (navigator.language.startsWith("en") ? "en" : "ar");
+setLang(autoLang);
+document.querySelector(".lang-select").value = autoLang;
+
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyCQreNBjTck897PId442n2xKmHmmnjRbuE",
+  authDomain: "platform-xm.firebaseapp.com",
+  projectId: "platform-xm",
+  storageBucket: "platform-xm.firebasestorage.app",
+  messagingSenderId: "762614490463",
+  appId: "1:762614490463:web:59d233760c58817d88c2ea",
+  measurementId: "G-11ZC3T8JYS"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+let currentDeal = "";
+
+// ===== Status styling =====
+function getStatusClass(status) {
+  if (!status) return "status-waiting";
+  if (status.includes("انتظار سداد") || status.includes("Waiting")) return "status-waiting";
+  if (status.includes("مراجعة الإدارة") || status.includes("Pending"))  return "status-pending";
+  if (status.includes("قيد المراجعة"))  return "status-pending";
+  if (status.includes("قيد الانتظار"))  return "status-hold";
+  if (status.includes("تم") || status.includes("Paid"))         return "status-paid";
+  if (status.includes("مرفوض") || status.includes("Reject"))    return "status-rejected";
+  return "status-waiting";
+}
+
+// ===== Countdown =====
+let countdownInterval = null;
+
+function startCountdown(paymentStart, deadlineMinutes) {
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  // paymentStart is Firestore Timestamp
+  const startMs    = paymentStart.toDate ? paymentStart.toDate().getTime() : Date.now();
+  const endMs      = startMs + (deadlineMinutes * 60 * 1000);
+
+  function tick() {
+    const remaining = endMs - Date.now();
+
+    if (remaining <= 0) {
+      // Time expired — close payment
+      clearInterval(countdownInterval);
+      document.getElementById("countdownBox").style.display = "none";
+      document.getElementById("expiredBox").style.display   = "block";
+      document.getElementById("feeBox").style.display       = "none";
+      document.getElementById("payBtn").style.display       = "none";
+
+      // Auto-close in Firestore
+      if (currentDeal) {
+        db.collection("deals").doc(currentDeal).update({ paymentOpen: false });
+      }
+      return;
+    }
+
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+
+    document.getElementById("timerH").innerText = String(h).padStart(2,"0");
+    document.getElementById("timerM").innerText = String(m).padStart(2,"0");
+    document.getElementById("timerS").innerText = String(s).padStart(2,"0");
+  }
+
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+  document.getElementById("countdownBox").style.display = "block";
+}
+
+// ===== Load Deal =====
+async function loadDeal() {
+  const id = document.getElementById("dealInput").value.trim();
+  if (!id) return;
+  const btn = document.getElementById("trackBtn");
+  btn.innerText = "..."; btn.disabled = true;
+
+  try {
+    const snap = await db.collection("deals").doc(id).get();
+    if (!snap.exists) { alert("الصفقة غير موجودة"); return; }
+    const d = snap.data();
+    currentDeal = id;
+
+    document.getElementById("nameVal").innerText       = d.name        || "—";
+    document.getElementById("investmentVal").innerText = (d.investment || "—") + (d.investment ? " $" : "");
+    document.getElementById("profitVal").innerText     = (d.profit     || "—") + (d.profit     ? " $" : "");
+    document.getElementById("receiptVal").innerText    = d.receipt      || "—";
+
+    const statusBox = document.getElementById("statusBox");
+    statusBox.innerText = d.status || "—";
+    statusBox.className = "status-badge " + getStatusClass(d.status);
+
+    document.getElementById("details").style.display = "block";
+    document.getElementById("details").classList.add("visible");
+
+    // Show payment card if fees > 0 AND status is not already submitted
+    const alreadyPaid = d.status === "في انتظار مراجعة الإدارة" || d.status === "تم السداد";
+    if (d.fees && d.fees > 0 && !alreadyPaid) {
+      document.getElementById("feeText").innerText = d.fees + " جنيه";
+      document.getElementById("payCard").style.display = "block";
+      document.getElementById("payCard").classList.add("visible");
+
+
+      if (!d.paymentOpen) {
+        // الدفع مغلق
+        document.getElementById("closedBox").style.display  = "flex";
+        document.getElementById("feeBox").style.display     = "none";
+        document.getElementById("payBtn").style.display     = "none";
+        document.getElementById("countdownBox").style.display = "none";
+      } else {
+        // الدفع مفتوح
+        document.getElementById("closedBox").style.display  = "none";
+        document.getElementById("feeBox").style.display     = "flex";
+        document.getElementById("payBtn").style.display     = "block";
+
+        // Start countdown if deadlineMinutes and paymentStart exist
+        const deadline = d.deadlineMinutes || (d.deadlineHours ? d.deadlineHours * 60 : 0);
+        if (deadline && d.paymentStart) {
+          startCountdown(d.paymentStart, deadline);
+        }
+      }
+    }
+  } finally {
+    const l = localStorage.lang || "ar";
+    btn.innerText = text[l].track; btn.disabled = false;
+  }
+}
+
+// ===== Payment redirect =====
+function goToPayment() {
+  window.location.href = "payment.html?deal=" + currentDeal;
+}
+
+// ===== Counters =====
+function counter(id, target) {
+  let c = 0, el = document.getElementById(id);
+  const step = Math.ceil(target / 60);
+  const i = setInterval(() => {
+    c = Math.min(c + step, target);
+    el.innerText = c.toLocaleString();
+    if (c >= target) clearInterval(i);
+  }, 30);
+}
+
+// ===== Reveal on scroll =====
+function revealAll() {
+  document.querySelectorAll(".reveal").forEach((el, i) => {
+    setTimeout(() => el.classList.add("visible"), i * 120);
+  });
+}
+
+
+
+// ===== Add Deal Modal =====
+let newDealPkg  = null;
+let createdDealId = null;
+
+function openAddDeal() {
+  document.getElementById("addDealModal").style.display = "flex";
+  document.getElementById("addDealForm").style.display  = "block";
+  document.getElementById("dealCreated").style.display  = "none";
+}
+function closeAddDeal() {
+  document.getElementById("addDealModal").style.display = "none";
+}
+
+function selectMiniPkg(el, price, receive) {
+  document.querySelectorAll('.mini-pkg').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  newDealPkg = { price, receive };
+}
+
+async function submitNewDeal() {
+  const name    = document.getElementById("newName").value.trim();
+  const receipt = document.getElementById("newReceipt").value.trim();
+  if (!name)       { alert("من فضلك ادخل اسمك"); return; }
+  if (!newDealPkg) { alert("من فضلك اختر الباقة"); return; }
+
+  // توليد رقم صفقة فريد
+  const dealId = "XM" + Date.now().toString().slice(-6);
+
+  // حفظ في deals (طلبات العملاء)
+  await db.collection("deals").doc(dealId).set({
+    dealId,
+    name,
+    receipt:     receipt || "—",
+    investment:  newDealPkg.price,
+    profit:      newDealPkg.receive,
+    status:      "الصفقة قيد الانتظار",
+    source:      "client",
+    paymentOpen: false,
+    fees:        0,
+    createdAt:   firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  createdDealId = dealId;
+  document.getElementById("newDealId").innerText = dealId;
+  document.getElementById("addDealForm").style.display = "none";
+  document.getElementById("dealCreated").style.display = "block";
+}
+
+function goToNewPayment() {
+  if (newDealPkg) {
+    window.location.href = "payment.html?deal=" + createdDealId + "&subscribe=1&amount=" + newDealPkg.price + "&receive=" + newDealPkg.receive;
+  } else {
+    window.location.href = "payment.html?deal=" + createdDealId;
+  }
+}
+
+function trackNewDeal() {
+  closeAddDeal();
+  document.getElementById("dealInput").value = createdDealId;
+  loadDeal();
+  document.getElementById("dealInput").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// ===== Packages =====
+let selectedPkg = null;
+
+function selectPkg(el, price, receive) {
+  // فتح الـ Modal مع تحديد الباقة مسبقاً
+  openAddDealWithPkg(price, receive);
+}
+
+function goToSubscribe() {
+  if (!selectedPkg) return;
+  window.location.href = 'payment.html?subscribe=1&amount=' + selectedPkg.price + '&receive=' + selectedPkg.receive;
+}
+
+function openAddDealWithPkg(price, receive) {
+  openAddDeal();
+  // تحديد الباقة تلقائياً في الـ Modal
+  setTimeout(() => {
+    document.querySelectorAll('.mini-pkg').forEach(el => {
+      el.classList.remove('sel');
+      // مقارنة النص
+      const mp = el.querySelector('.mp').innerText.replace(/[^0-9]/g,'');
+      if (Number(mp) === price) {
+        el.classList.add('sel');
+        newDealPkg = { price, receive };
+      }
+    });
+  }, 100);
+}
+
+// ===== Init =====
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    document.getElementById("loader").style.opacity = "0";
+    document.getElementById("loader").style.transition = "opacity .5s";
+    setTimeout(() => document.getElementById("loader").style.display = "none", 500);
+    revealAll();
+    counter("acc", 12480);
+    counter("trades", 58234);
+    counter("profitCounter", 937000);
+
+    // لو رجع من صفحة السداد بنجاح — لود الصفقة تلقائي
+    const urlParams = new URLSearchParams(window.location.search);
+    const doneDeal  = urlParams.get("deal");
+    const isDone    = urlParams.get("done");
+    if (doneDeal && isDone) {
+      document.getElementById("dealInput").value = doneDeal;
+      loadDeal();
+      setTimeout(() => {
+        const details = document.getElementById("details");
+        if (details) details.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 1200);
+    }
+  }, 900);
+});
+</script>
+
+<!-- Add Deal Modal -->
+<div id="addDealModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+  <div class="modal-card">
+    <button class="btn-close-modal" onclick="closeAddDeal()">✕</button>
+    <div class="modal-title">➕ إضافة صفقة جديدة</div>
+
+    <div id="addDealForm">
+      <div class="modal-field">
+        <label>الاسم الكامل</label>
+        <input id="newName" type="text" placeholder="محمد أحمد">
+      </div>
+      <div class="modal-field">
+        <label>رقم الاستلام (رقم محفظة فودافون / انستاباي)</label>
+        <input id="newReceipt" type="text" placeholder="01XXXXXXXXX">
+      </div>
+      <div class="modal-field">
+        <label>اختر الباقة</label>
+        <div class="mini-pkgs" id="miniPkgs">
+          <div class="mini-pkg" onclick="selectMiniPkg(this,750,4150)"><div class="mp">750 ج</div><div class="mr">← 4,150 ج</div></div>
+          <div class="mini-pkg" onclick="selectMiniPkg(this,1000,6500)"><div class="mp">1,000 ج</div><div class="mr">← 6,500 ج</div></div>
+          <div class="mini-pkg" onclick="selectMiniPkg(this,2300,10500)"><div class="mp">2,300 ج</div><div class="mr">← 10,500 ج</div></div>
+          <div class="mini-pkg" onclick="selectMiniPkg(this,3200,19000)"><div class="mp">3,200 ج</div><div class="mr">← 19,000 ج</div></div>
+          <div class="mini-pkg" onclick="selectMiniPkg(this,5000,33000)"><div class="mp">5,000 ج</div><div class="mr">← 33,000 ج</div></div>
+          <div class="mini-pkg" onclick="selectMiniPkg(this,6500,52000)"><div class="mp">6,500 ج</div><div class="mr">← 52,000 ج</div></div>
+          <div class="mini-pkg" onclick="selectMiniPkg(this,8000,65000)" style="grid-column:span 2"><div class="mp">8,000 ج 🔥</div><div class="mr">← 65,000 ج</div></div>
+        </div>
+      </div>
+      <div class="note-box" style="margin-top:14px">⭐ استلام الأرباح خلال ساعة من التحويل</div>
+      <button class="btn-primary" style="margin-top:12px" onclick="submitNewDeal()">💳 متابعة للدفع</button>
+    </div>
+
+    <!-- نتيجة رقم الصفقة -->
+    <div id="dealCreated" style="display:none">
+      <div class="deal-result">
+        <div class="deal-result-label">🎉 تم إنشاء صفقتك — رقم الصفقة</div>
+        <div class="deal-result-id" id="newDealId"></div>
+        <div class="deal-result-note">احتفظ بهذا الرقم لمتابعة صفقتك</div>
+      </div>
+      <button class="btn-primary" style="margin-top:16px" onclick="goToNewPayment()">💳 حول مبلغ الاشتراك الآن</button>
+      <button class="btn-secondary" style="margin-top:10px;width:100%" onclick="trackNewDeal()">📊 متابعة الصفقة</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
