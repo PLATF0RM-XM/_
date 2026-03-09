@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Platform</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<style>
+body{margin:0;font-family:system-ui;background:#0f1f3e;color:#eaf0ff}
+header{background:linear-gradient(135deg,#0b1833,#132a5a);padding:16px;text-align:center;position:relative}
+.lang{position:absolute;top:12px;left:12px}
+.card{background:rgba(28,45,82,0.6);backdrop-filter:blur(14px);border-radius:16px;padding:22px;margin:20px;box-shadow:0 8px 32px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08)}
+input,button,select{width:100%;padding:14px;border-radius:10px;border:none;margin-top:10px}
+button{background:#00b05c;color:#fff;font-weight:bold;cursor:pointer}
+button:active{transform:scale(.97);opacity:.9}
+.status{padding:10px;border-radius:10px;text-align:center;font-weight:bold;margin-top:10px}
+footer{text-align:center;color:#9fb0d1;font-size:11px;padding:20px}
+.xm-banner{width:100%;height:220px;background:linear-gradient(120deg,#0b1833,#132a5a,#0b1833);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.xm-banner img{max-width:55%;animation:float 6s ease-in-out infinite}
+@keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+@media(max-width:600px){.xm-banner{height:170px}.xm-banner img{max-width:75%}}
+.stats{display:flex;justify-content:space-around;text-align:center;margin:30px 15px}
+.stat{background:rgba(28,45,82,0.6);backdrop-filter:blur(14px);padding:20px;border-radius:16px;width:30%;border:1px solid rgba(255,255,255,.08)}
+.stat h2{color:#00b05c;font-size:28px}
+@media(max-width:600px){.stats{flex-direction:column}.stat{width:100%;margin-bottom:15px}}
+.fade-in{animation:fadeUp 1.2s ease forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+#loader{position:fixed;inset:0;background:#0b1833;display:flex;align-items:center;justify-content:center;z-index:9999}
+.loader-box{width:60px;height:60px;border:4px solid rgba(255,255,255,.2);border-top:4px solid #00b05c;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+input[type=file]{background:#fff;color:#000}
+#msg{margin-top:10px;font-weight:bold;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="loader-box"></div></div>
+
+<header>
+  <div class="lang">
+    <select onchange="setLang(this.value)">
+      <option value="ar">AR</option>
+      <option value="en">EN</option>
+    </select>
+  </div>
+  <div id="title" style="font-size:20px;font-weight:700;color:#00b05c"></div>
+  <div id="subtitle" style="font-size:12px;color:#9fb0d1"></div>
+</header>
+
+<div class="xm-banner">
+  <img src="IMG_7211.webp" alt="Investment Platforms">
+</div>
+
+<div class="stats fade-in">
+  <div class="stat"><h2 id="acc">0</h2><div>Accounts</div></div>
+  <div class="stat"><h2 id="trades">0</h2><div>Trades</div></div>
+  <div class="stat"><h2 id="profitCounter">0</h2><div>Profit</div></div>
+</div>
+
+<!-- البحث عن الصفقة -->
+<div class="card">
+  <input id="dealInput">
+  <button onclick="loadDeal()" id="trackBtn"></button>
+</div>
+
+<!-- تفاصيل الصفقة -->
+<div class="card" id="details" style="display:none">
+  <p><b id="lblName"></b> <span id="nameVal"></span></p>
+  <p><b id="lblInv"></b> <span id="investmentVal"></span></p>
+  <p><b id="lblProfit"></b> <span id="profitVal"></span></p>
+  <p><b id="lblReceipt"></b> <span id="receiptVal"></span></p>
+  <div id="statusBox" class="status"></div>
+</div>
+
+<!-- سداد الرسوم -->
+<div class="card" id="payCard" style="display:none">
+  <p id="feeText"></p>
+  <input type="file" id="proof" accept="image/*">
+  <button id="payBtn" onclick="uploadProof()"></button>
+  <div id="msg"></div>
+</div>
+
+<footer id="footer"></footer>
+
+<script>
+// ======= Translations =======
+const text = {
+  ar:{dir:"rtl",title:"منصة الاستثمار",subtitle:"متابعة الصفقات وحالة السداد",deal:"رقم الصفقة",track:"متابعة الصفقة",name:"اسم المستثمر:",inv:"مبلغ الاستثمار:",profit:"الأرباح:",receipt:"رقم الاستلام:",pay:"إرسال إثبات التحويل",footer:"هذه المنصة مخصصة لعرض حالة الصفقات فقط",fees:"الرسوم المطلوبة: "},
+  en:{dir:"ltr",title:"Investment Platform",subtitle:"Trade Tracking & Payment Status",deal:"Trade Number",track:"Track Trade",name:"Investor:",inv:"Investment:",profit:"Profit:",receipt:"Receipt No:",pay:"Submit Payment Proof",footer:"This platform is for trade tracking and status display only",fees:"Required Fees: "}
+};
+
+function setLang(l){
+  localStorage.lang = l;
+  document.documentElement.lang = l;
+  document.documentElement.dir = text[l].dir;
+  document.getElementById("title").innerText    = text[l].title;
+  document.getElementById("subtitle").innerText = text[l].subtitle;
+  document.getElementById("dealInput").placeholder = text[l].deal;
+  document.getElementById("trackBtn").innerText = text[l].track;
+  document.getElementById("lblName").innerText  = text[l].name;
+  document.getElementById("lblInv").innerText   = text[l].inv;
+  document.getElementById("lblProfit").innerText= text[l].profit;
+  document.getElementById("lblReceipt").innerText=text[l].receipt;
+  document.getElementById("payBtn").innerText   = text[l].pay;
+  document.getElementById("footer").innerText   = text[l].footer;
+}
+const autoLang = localStorage.lang || (navigator.language.startsWith("en") ? "en" : "ar");
+setLang(autoLang);
+
+// ======= Firebase =======
+const firebaseConfig = {
+  apiKey: "AIzaSyCQreNBjTck897PId442n2xKmHmmnjRbuE",
+  authDomain: "platform-xm.firebaseapp.com",
+  projectId: "platform-xm",
+  storageBucket: "platform-xm.firebasestorage.app",
+  messagingSenderId: "762614490463",
+  appId: "1:762614490463:web:59d233760c58817d88c2ea",
+  measurementId: "G-11ZC3T8JYS"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ======= Cloudinary =======
+const CLOUD_NAME    = "ddmly7szz";
+const UPLOAD_PRESET = "Platform-xm";
+
+let currentDeal = "";
+
+// ======= Load Deal =======
+async function loadDeal() {
+  const id = document.getElementById("dealInput").value.trim();
+  if (!id) return;
+  const doc = await db.collection("deals").doc(id).get();
+  if (!doc.exists) { alert("الصفقة غير موجودة"); return; }
+  const d = doc.data();
+  currentDeal = id;
+
+  document.getElementById("nameVal").innerText      = d.name       || "";
+  document.getElementById("investmentVal").innerText = d.investment || "";
+  document.getElementById("profitVal").innerText    = d.profit      || "";
+  document.getElementById("receiptVal").innerText   = d.receipt     || "";
+
+  const statusBox = document.getElementById("statusBox");
+  statusBox.innerText   = d.status || "";
+  statusBox.className   = "status";
+
+  document.getElementById("details").style.display = "block";
+
+  if (d.paymentOpen) {
+    const l = localStorage.lang || "ar";
+    document.getElementById("feeText").innerText = text[l].fees + (d.fees || "—");
+    document.getElementById("payCard").style.display = "block";
+  }
+}
+
+// ======= Upload Proof via Cloudinary then save URL in Firestore =======
+async function uploadProof() {
+  const file = document.getElementById("proof").files[0];
+  if (!file) { alert("يرجى اختيار صورة التحويل"); return; }
+
+  const btn = document.getElementById("payBtn");
+  const msg = document.getElementById("msg");
+  btn.disabled  = true;
+  btn.innerText = "جاري الرفع...";
+  msg.innerText = "";
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("folder", "proofs");
+    formData.append("public_id", "deal_" + currentDeal);
+
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:"POST", body:formData });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error("فشل رفع الصورة");
+
+    await db.collection("deals").doc(currentDeal).update({
+      paymentProof: data.secure_url,
+      status: "في انتظار مراجعة الإدارة"
+    });
+
+    msg.style.color = "#7dffb2";
+    msg.innerText   = "✅ تم إرسال إثبات التحويل بنجاح";
+    btn.innerText   = "تم الإرسال ✓";
+  } catch(err) {
+    msg.style.color = "#ff7d7d";
+    msg.innerText   = "❌ خطأ: " + err.message;
+    btn.disabled    = false;
+    const l = localStorage.lang || "ar";
+    btn.innerText   = text[l].pay;
+  }
+}
+
+// ======= Counters =======
+function counter(id, target) {
+  let c = 0, el = document.getElementById(id);
+  const i = setInterval(() => {
+    c += Math.ceil(target / 60);
+    if (c >= target) { c = target; clearInterval(i); }
+    el.innerText = c.toLocaleString();
+  }, 30);
+}
+
+// ======= Init =======
+window.addEventListener("load", () => {
+  setTimeout(() => document.getElementById("loader").style.display = "none", 800);
+  counter("acc", 12480);
+  counter("trades", 58234);
+  counter("profitCounter", 937000);
+});
+</script>
+</body>
+</html>

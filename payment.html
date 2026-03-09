@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>سداد الرسوم | منصة XM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<style>
+body{margin:0;font-family:Arial;background:linear-gradient(135deg,#07162e,#0b2a52);color:#fff;text-align:center}
+.container{max-width:420px;margin:80px auto;background:rgba(255,255,255,.12);backdrop-filter:blur(16px);border-radius:18px;padding:25px}
+h2{margin-bottom:10px}
+.vc{background:#000;padding:12px;border-radius:10px;margin:15px 0;font-size:18px}
+input[type=file]{width:100%;margin:10px 0}
+button{width:100%;padding:14px;border:none;border-radius:12px;background:#00c176;font-weight:bold;font-size:16px;cursor:pointer;color:#fff}
+button:disabled{opacity:.6;cursor:not-allowed}
+.note{font-size:13px;opacity:.8;margin-top:10px}
+#msg{margin-top:15px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>سداد رسوم الصفقة</h2>
+  <p>يرجى تحويل الرسوم على رقم فودافون كاش:</p>
+  <div class="vc">010XXXXXXXX</div>
+  <p id="feesInfo"></p>
+  <input type="file" id="proof" accept="image/*">
+  <button id="sendBtn" onclick="uploadProof()">إرسال إثبات التحويل</button>
+  <div class="note">سيتم مراجعة التحويل من الإدارة</div>
+  <div id="msg"></div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCQreNBjTck897PId442n2xKmHmmnjRbuE",
+  authDomain: "platform-xm.firebaseapp.com",
+  projectId: "platform-xm",
+  storageBucket: "platform-xm.firebasestorage.app",
+  messagingSenderId: "762614490463",
+  appId: "1:762614490463:web:59d233760c58817d88c2ea"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const CLOUD_NAME    = "ddmly7szz";
+const UPLOAD_PRESET = "Platform-xm";
+
+const params = new URLSearchParams(window.location.search);
+const dealId = params.get("deal");
+
+(async () => {
+  if (!dealId) return;
+  const snap = await db.collection("deals").doc(dealId).get();
+  if (!snap.exists) return;
+  const d = snap.data();
+  if (d.fees) document.getElementById("feesInfo").innerText = "الرسوم المطلوبة: " + d.fees + " جنيه";
+})();
+
+async function uploadProof() {
+  const file = document.getElementById("proof").files[0];
+  if (!file) { alert("يرجى اختيار صورة التحويل"); return; }
+  if (!dealId) { alert("رقم الصفقة غير موجود في الرابط"); return; }
+
+  const btn = document.getElementById("sendBtn");
+  const msg = document.getElementById("msg");
+  btn.disabled = true;
+  btn.innerText = "جاري الرفع...";
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("folder", "payments");
+    formData.append("public_id", "deal_" + dealId);
+
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:"POST", body:formData });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error("فشل رفع الصورة على Cloudinary");
+
+    await db.collection("deals").doc(dealId).update({
+      paymentProof: data.secure_url,
+      status: "في انتظار مراجعة الإدارة"
+    });
+
+    msg.style.color = "#7dffb2";
+    msg.innerText   = "✅ تم إرسال إثبات التحويل بنجاح";
+    btn.innerText   = "تم الإرسال ✓";
+  } catch(err) {
+    msg.style.color = "#ff7d7d";
+    msg.innerText   = "❌ خطأ: " + err.message;
+    btn.disabled    = false;
+    btn.innerText   = "إرسال إثبات التحويل";
+  }
+}
+</script>
+</body>
+</html>
