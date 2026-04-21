@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="format-detection" content="telephone=no">
+<title>شكراً | XM Platform</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f; --surface:#12121a; --surface2:#1a1a26;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+  --text:#f0f0f8; --muted:#6b6b8a;
+  --accent:#7c6af5; --accent2:#5e4de8;
+  --teal:#2dd4bf; --teal2:#14b8a6;
+  --gold:#f59e0b; --green:#10b981; --red:#ef4444;
+  --r:14px; --r2:20px; --r3:28px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(124,106,245,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(124,106,245,0.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(80px);}
+.orb-1{width:400px;height:400px;background:rgba(16,185,129,0.09);top:-100px;right:-100px;}
+.orb-2{width:350px;height:350px;background:rgba(124,106,245,0.08);bottom:50px;left:-80px;}
+
+/* particles */
+.particles{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;}
+.pt{position:absolute;border-radius:50%;animation:ptUp 4s ease-in forwards;}
+@keyframes ptUp{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-20vh) scale(1);opacity:0}}
+
+.card{position:relative;z-index:10;background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:44px 28px 36px;max-width:380px;width:calc(100% - 32px);text-align:center;box-shadow:0 0 60px rgba(16,185,129,0.07),0 32px 80px rgba(0,0,0,0.5);animation:cardIn .6s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes cardIn{from{transform:translateY(40px) scale(.95);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+.card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);}
+
+.check{width:80px;height:80px;border-radius:50%;margin:0 auto 24px;background:rgba(16,185,129,0.1);border:2px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;font-size:36px;animation:pop .5s .3s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+
+.title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;background:linear-gradient(135deg,var(--green),#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:fu .5s .4s both;}
+.sub{font-size:12px;color:var(--muted);letter-spacing:3px;margin-bottom:26px;animation:fu .5s .5s both;}
+@keyframes fu{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.deal-box{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:var(--r2);padding:16px 20px;margin-bottom:20px;animation:fu .5s .6s both;}
+.dl-label{font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:6px;}
+.dl-id{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--gold);letter-spacing:4px;}
+
+.info-list{display:flex;flex-direction:column;gap:10px;margin-bottom:26px;animation:fu .5s .7s both;}
+.info-row{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.025);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--muted);}
+.info-row span:first-child{font-size:17px;flex-shrink:0;}
+
+.btn-p{width:100%;padding:16px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:var(--r2);color:#fff;font-family:'Tajawal',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(124,106,245,.3);transition:all .2s;margin-bottom:10px;animation:fu .5s .8s both;}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,106,245,.5);}
+.btn-s{width:100%;padding:14px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:var(--r2);color:var(--green);font-family:'Tajawal',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;animation:fu .5s .9s both;}
+.btn-s:hover{background:rgba(16,185,129,0.15);}
+
+.fab{position:fixed;left:16px;z-index:9999;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .2s,box-shadow .2s;}
+.fab:hover{transform:scale(1.1);}
+.fab-fb{bottom:20px;background:#1877f2;box-shadow:0 4px 18px rgba(24,119,242,.45);}
+.fab-info{bottom:82px;background:linear-gradient(135deg,var(--accent),var(--teal));box-shadow:0 4px 18px rgba(124,106,245,.4);font-size:20px;}
+.copy-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;}
+.btn-copy{background:rgba(45,212,191,0.1);border:1px solid rgba(45,212,191,0.25);color:var(--teal);border-radius:10px;padding:7px 16px;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-copy:hover{background:rgba(45,212,191,0.2);}
+.btn-copy.copied{background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.35);color:var(--green);}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="particles" id="pts"></div>
+
+<div class="card">
+  <div class="check">✅</div>
+  <div class="title" id="tTitle">تم إرسال التحويل!</div>
+  <div class="sub" id="tSub">TRANSFER SENT SUCCESSFULLY</div>
+
+  <div class="deal-box" id="dealBox" style="display:none">
+    <div class="dl-label" id="dlLbl">رقم الصفقة</div>
+    <div class="copy-row">
+      <div class="dl-id" id="dlId"></div>
+      <button class="btn-copy" id="bCopy" onclick="copyId()">📋 نسخ</button>
+    </div>
+  </div>
+
+  <div class="info-list">
+    <div class="info-row"><span>⏳</span><span id="i1">إثبات التحويل وصل للإدارة وجاري المراجعة</span></div>
+    <div class="info-row"><span>💰</span><span id="i2">ستستلم أرباحك خلال ساعة من تأكيد الإدارة</span></div>
+    <div class="info-row"><span>📋</span><span id="i3">احتفظ برقم صفقتك لمتابعة الحالة</span></div>
+  </div>
+
+  <button class="btn-p" id="bTrack" onclick="goTrack()">📊 متابعة الصفقة</button>
+  <button class="btn-s" id="bHome" onclick="goHome()">🏠 الصفحة الرئيسية</button>
+</div>
+
+<a class="fab fab-fb" href="https://www.facebook.com/share/1BqAEE93yu/?mibextid=wwXIfr" target="_blank">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+</a>
+<a class="fab fab-info" href="about.html">ℹ️</a>
+
+<script>
+const T={ar:{dir:"rtl",title:"تم إرسال التحويل!",sub:"TRANSFER SENT SUCCESSFULLY",dlLbl:"رقم الصفقة",i1:"إثبات التحويل وصل للإدارة وجاري المراجعة",i2:"ستستلم أرباحك خلال ساعة من تأكيد الإدارة",i3:"احتفظ برقم صفقتك لمتابعة الحالة",bTrack:"📊 متابعة الصفقة",bHome:"🏠 الصفحة الرئيسية",bCopy:"📋 نسخ"},
+en:{dir:"ltr",title:"Transfer Sent!",sub:"TRANSFER SENT SUCCESSFULLY",dlLbl:"TRADE NUMBER",i1:"Your transfer proof has been received and is under review",i2:"You'll receive your profits within 1 hour of admin confirmation",i3:"Keep your trade number to track your status",bTrack:"📊 Track Trade",bHome:"🏠 Home",bCopy:"📋 Copy"}};
+const l=localStorage.lang||(navigator.language.startsWith("en")?"en":"ar"),t=T[l];
+document.documentElement.dir=t.dir; document.documentElement.lang=l;
+const s=(id,v)=>{ const e=document.getElementById(id); if(e) e.innerText=v; };
+s("tTitle",t.title); s("tSub",t.sub); s("dlLbl",t.dlLbl);
+s("i1",t.i1); s("i2",t.i2); s("i3",t.i3); s("bTrack",t.bTrack); s("bHome",t.bHome); s("bCopy",t.bCopy);
+
+const params=new URLSearchParams(window.location.search), dealId=params.get("deal");
+if(dealId){ document.getElementById("dealBox").style.display="block"; document.getElementById("dlId").innerText=dealId; }
+
+function goTrack(){
+  if(dealId){
+    window.location.href="index.html?deal="+dealId+"&done=1";
+  } else {
+    window.location.href="index.html";
+  }
+}
+function goHome(){ window.location.href="index.html"; }
+
+function copyId(){
+  if(!dealId) return;
+  navigator.clipboard.writeText(dealId).then(()=>{
+    const btn=document.getElementById("bCopy");
+    const l=localStorage.lang||"ar";
+    btn.innerText=l==="en"?"✓ Copied!":"✓ تم النسخ";
+    btn.classList.add("copied");
+    setTimeout(()=>{ btn.innerText=T[l].bCopy; btn.classList.remove("copied"); },2000);
+  });
+}
+
+// particles
+const cols=["#7c6af5","#2dd4bf","#f59e0b","#10b981"];
+const c=document.getElementById("pts");
+for(let i=0;i<22;i++){
+  const p=document.createElement("div"); p.className="pt";
+  const sz=4+Math.random()*6;
+  p.style.cssText=`left:${Math.random()*100}%;background:${cols[Math.floor(Math.random()*cols.length)]};animation-delay:${Math.random()*3}s;animation-duration:${3+Math.random()*2}s;width:${sz}px;height:${sz}px;`;
+  c.appendChild(p);
+}
+</script>
+</body>
+</html>
