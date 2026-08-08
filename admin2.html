@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة التحكم | XM Platform</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050507; --surface:#0e0e11; --surface2:#161619;
+  --border:rgba(212,175,55,0.1); --border2:rgba(212,175,55,0.22);
+  --text:#f5f0e8; --muted:#7a7060;
+  --accent:#d4af37; --accent2:#b8962a;
+  --teal:#d4af37; --teal2:#c9a227;
+  --gold:#d4af37; --gold2:#f0c040;
+  --green:#2ecc71; --red:#e74c3c;
+  --r:14px; --r2:20px; --r3:28px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(212,175,55,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(80px);}
+.orb-1{width:500px;height:500px;background:radial-gradient(circle,rgba(212,175,55,0.08) 0%,transparent 70%);top:-160px;right:-160px;pointer-events:none;z-index:0;position:fixed;border-radius:50%;filter:blur(80px);}
+.orb-2{width:420px;height:420px;background:radial-gradient(circle,rgba(212,175,55,0.05) 0%,transparent 70%);bottom:-80px;left:-160px;pointer-events:none;z-index:0;position:fixed;border-radius:50%;filter:blur(80px);}
+
+/* LOGIN */
+#loginWrap{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:36px 28px;position:relative;}
+.login-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:50%;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.5),transparent);}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px;}
+.logo-box{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#b8962a,#f0c040);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:900;color:#050507;box-shadow:0 2px 14px rgba(212,175,55,0.4),0 0 0 1px rgba(212,175,55,0.2);}
+.logo-name{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text);}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:3px;}
+.login-title{text-align:center;font-size:18px;font-weight:700;margin-bottom:22px;color:var(--text);}
+
+/* FIELDS */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:7px;}
+.field input,.field select{width:100%;padding:13px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);color:var(--text);font-family:'Tajawal',sans-serif;font-size:14px;outline:none;transition:all .25s;}
+.field input:focus,.field select:focus{border-color:rgba(212,175,55,.45);background:rgba(212,175,55,.03);}
+.field input::placeholder{color:var(--muted);}
+.field select option{background:#0e0e11;}
+
+/* BUTTONS */
+.btn-accent{width:100%;padding:14px;background:linear-gradient(135deg,#b8962a,#f0c040);border:none;border-radius:var(--r2);color:#050507;font-family:'Tajawal',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(212,175,55,.28);margin-top:6px;}
+.btn-accent:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(212,175,55,.45);}
+.btn-accent:active{transform:scale(.98);}
+
+.btn-danger{width:100%;padding:13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:var(--r2);color:var(--red);font-family:'Tajawal',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:10px;}
+.btn-danger:hover{background:rgba(239,68,68,.15);}
+
+/* PANEL */
+#panel{display:none;position:relative;z-index:1;}
+
+.admin-header{padding:16px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(5,5,7,0.92);backdrop-filter:blur(20px);position:sticky;top:0;z-index:10;}
+
+.panel-body{max-width:720px;margin:0 auto;padding:24px 16px 60px;}
+
+.sec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:24px;margin-bottom:18px;position:relative;overflow:hidden;}
+.sec-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.3),transparent);}
+.sec-head{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:4px;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.sec-head::after{content:'';flex:1;height:1px;background:rgba(212,175,55,0.15);}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr;}}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:11px 12px;text-align:center;font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:11px 12px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(212,175,55,0.03);}
+
+.btn-view{background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.22);color:var(--gold);padding:5px 12px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-view:hover{background:rgba(212,175,55,0.16);}
+.st-sel{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:8px;font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;outline:none;}
+.st-sel option{background:#0e0e11;}
+.no-proof{font-size:11px;color:var(--muted);}
+
+/* MODAL */
+#modal{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.9);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px;}
+.modal-in{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;max-width:90%;max-height:90vh;overflow:auto;text-align:center;}
+.modal-in img{max-width:100%;max-height:70vh;border-radius:var(--r);}
+.btn-close{margin-top:14px;padding:10px 28px;background:rgba(212,175,55,0.1);border:1px solid var(--border2);color:var(--text);border-radius:var(--r);font-family:'Tajawal',sans-serif;font-size:14px;cursor:pointer;transition:background .2s;}
+.btn-close:hover{background:rgba(212,175,55,0.22);}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-box">XM</div>
+      <div><div class="logo-name">XM PLATFORM</div><div class="logo-sub">ADMIN PANEL</div></div>
+    </div>
+    <div class="login-title">تسجيل الدخول</div>
+    <div class="field"><label>البريد الإلكتروني</label><input id="email" type="email" placeholder="admin@example.com"></div>
+    <div class="field"><label>كلمة المرور</label><input id="password" type="password" placeholder="••••••••"></div>
+    <button class="btn-accent" onclick="login()">دخول</button>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+  <div class="admin-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="logo-box" style="width:36px;height:36px;font-size:12px;border-radius:50%;background:linear-gradient(135deg,#b8962a,#f0c040);color:#050507;">XM</div>
+      <div><div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--gold)">XM PLATFORM</div><div style="font-size:9px;color:var(--muted);letter-spacing:3px">ADMIN</div></div>
+    </div>
+  </div>
+
+  <div class="panel-body">
+
+    <!-- Deal Form -->
+    <div class="sec-card">
+      <div class="sec-head">إدارة الصفقة</div>
+      <div class="form-grid">
+        <div class="field"><label>رقم الصفقة</label><input id="dealId" placeholder="DEAL-001"></div>
+        <div class="field"><label>اسم العميل</label><input id="name" placeholder="Mohamed Ahmed"></div>
+        <div class="field"><label>مبلغ الاستثمار</label><input id="investment" placeholder="1000" type="number"></div>
+        <div class="field"><label>الأرباح</label><input id="profit" placeholder="5000" type="number"></div>
+        <div class="field"><label>رقم الاستلام</label><input id="receipt" placeholder="01234567890"></div>
+        <div class="field"><label>مبلغ الإيداع</label><input id="fees" placeholder="500" type="number"></div>
+        <div class="field"><label>مدة السداد (دقايق)</label><input id="hours" placeholder="60" type="number"></div>
+        <div class="field"><label>حالة الدفع</label>
+          <select id="paymentOpen">
+            <option value="true">✅ الدفع مفتوح</option>
+            <option value="false">🔒 الدفع مغلق</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-accent" onclick="saveDeal()">💾 حفظ / تعديل الصفقة</button>
+      <button class="btn-danger" onclick="deleteDeal()">🗑️ حذف الصفقة</button>
+    </div>
+
+    <!-- Admin Deals Table -->
+    <div class="sec-card">
+      <div class="sec-head">طلبات الأدمن</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>رقم الصفقة</th><th>الاسم</th><th>إثبات</th><th>الحالة</th><th>تعديل</th><th>مسح</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Packages -->
+    <div class="sec-card">
+      <div class="sec-head">إدارة الباقات</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px">مبلغ الاشتراك (جنيه)</label><input id="pkgAmount" type="number" placeholder="750" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'Tajawal',sans-serif;font-size:14px;outline:none"></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px">مبلغ الاستلام (جنيه)</label><input id="pkgReceive" type="number" placeholder="4150" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:'Tajawal',sans-serif;font-size:14px;outline:none"></div>
+      </div>
+      <button class="btn-accent" onclick="addPackage()" style="margin-bottom:16px">➕ إضافة باقة</button>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>مبلغ الاشتراك</th><th>مبلغ الاستلام</th><th>مسح</th></tr></thead>
+          <tbody id="pkgRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Client Subscriptions -->
+    <div class="sec-card">
+      <div class="sec-head">طلبات الاشتراك (من العملاء)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>رقم الصفقة</th><th>الاسم</th><th>إثبات</th><th>الحالة</th><th>تعديل</th><th>مسح</th></tr></thead>
+          <tbody id="subRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Archive -->
+    <div class="sec-card">
+      <div class="sec-head" style="cursor:pointer" onclick="toggleArchive()">
+        🗄️ الأرشيف <span id="archTgl" style="font-size:11px;color:var(--muted);margin-right:8px">▼ عرض</span>
+      </div>
+      <div id="archSec" style="display:none">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>رقم الصفقة</th><th>الاسم</th><th>إثبات</th><th>الحالة</th><th>استعادة</th><th>مسح نهائي</th></tr></thead>
+            <tbody id="archRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Image Modal -->
+<div id="modal">
+  <div class="modal-in">
+    <img id="proofImg" src="" alt="إثبات التحويل">
+    <br>
+    <button class="btn-close" onclick="closeModal()">إغلاق</button>
+  </div>
+</div>
+
+<script>
+const FB={apiKey:"AIzaSyCQreNBjTck897PId442n2xKmHmmnjRbuE",authDomain:"platform-xm.firebaseapp.com",projectId:"platform-xm",storageBucket:"platform-xm.firebasestorage.app",messagingSenderId:"762614490463",appId:"1:762614490463:web:59d233760c58817d88c2ea"};
+firebase.initializeApp(FB);
+const auth=firebase.auth(), db=firebase.firestore();
+
+function login(){
+  const e=document.getElementById("email").value.trim(), p=document.getElementById("password").value.trim();
+  auth.signInWithEmailAndPassword(e,p).then(()=>{
+    document.getElementById("loginWrap").style.display="none";
+    document.getElementById("panel").style.display="block";
+    loadDeals(); loadSubscriptions(); loadPackages();
+  }).catch(e=>alert("خطأ: "+e.message));
+}
+
+const STATUS_OPTIONS=["الصفقة قيد الانتظار","في انتظار سداد مبلغ الإيداع","في انتظار مراجعة الإدارة","قيد المراجعة","قيد الانتظار","تم السداد","مرفوض"];
+
+function buildRow(doc, col){
+  const d=doc.data(), id=doc.id;
+  const opts=STATUS_OPTIONS.map(s=>`<option ${d.status===s?"selected":""}>${s}</option>`).join("");
+  return `<tr>
+    <td style="color:var(--gold2);font-weight:700;font-family:'Space Grotesk',sans-serif">${d.dealId||id}</td>
+    <td>${d.name||"—"}</td>
+    <td>${d.paymentProof?`<button class="btn-view" onclick="viewProof('${d.paymentProof}')">عرض</button>`:`<span class="no-proof">—</span>`}</td>
+    <td><select class="st-sel" onchange="db.collection('${col}').doc('${id}').update({status:this.value})">${opts}</select></td>
+    <td><button class="btn-view" onclick="${col==='deals'?`fillForm('${id}')`:`alert('رقم: ${d.dealId||id}')`}">✏️</button></td>
+    <td>
+      <button class="btn-view" style="background:rgba(245,158,11,.1);color:var(--gold);border-color:rgba(245,158,11,.25)" onclick="archiveDeal('${id}')">🗄️</button>
+      <button class="btn-view" style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.25);margin-right:4px" onclick="if(confirm('مسح؟'))db.collection('${col}').doc('${id}').delete()">🗑️</button>
+    </td>
+  </tr>`;
+}
+
+function loadDeals(){
+  const render=snap=>{ let h=""; snap.forEach(doc=>{ if(doc.data().source==="admin") h+=buildRow(doc,"deals"); }); document.getElementById("rows").innerHTML=h||`<tr><td colspan="6" style="color:var(--muted);padding:24px">لا توجد طلبات أدمن</td></tr>`; };
+  db.collection("deals").orderBy("createdAt","desc").onSnapshot(render,()=>db.collection("deals").onSnapshot(render));
+}
+
+function loadSubscriptions(){
+  let clientDeals=[], subscriptions=[];
+  const renderAll=()=>{
+    const all=[...clientDeals,...subscriptions];
+    if(!all.length){ document.getElementById("subRows").innerHTML=`<tr><td colspan="6" style="color:var(--muted);padding:24px">لا توجد طلبات اشتراك</td></tr>`; return; }
+    document.getElementById("subRows").innerHTML=all.map(({id,d,col})=>buildRow({id,data:()=>d},col)).join("");
+  };
+  db.collection("deals").orderBy("createdAt","desc").onSnapshot(snap=>{ clientDeals=[]; snap.forEach(doc=>{ if(doc.data().source!=="admin") clientDeals.push({id:doc.id,d:doc.data(),col:"deals"}); }); renderAll(); },()=>db.collection("deals").onSnapshot(snap=>{ clientDeals=[]; snap.forEach(doc=>{ if(doc.data().source!=="admin") clientDeals.push({id:doc.id,d:doc.data(),col:"deals"}); }); renderAll(); }));
+  db.collection("subscriptions").orderBy("createdAt","desc").onSnapshot(snap=>{ subscriptions=[]; snap.forEach(doc=>subscriptions.push({id:doc.id,d:doc.data(),col:"subscriptions"})); renderAll(); },()=>db.collection("subscriptions").onSnapshot(snap=>{ subscriptions=[]; snap.forEach(doc=>subscriptions.push({id:doc.id,d:doc.data(),col:"subscriptions"})); renderAll(); }));
+}
+
+function loadPackages(){
+  db.collection("packages").orderBy("amount").onSnapshot(snap=>{
+    let h=""; snap.forEach(doc=>{ const d=doc.data(); h+=`<tr><td>${Number(d.amount).toLocaleString()} ج</td><td>${Number(d.receive).toLocaleString()} ج</td><td><button class="btn-view" style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.25)" onclick="deletePackage('${doc.id}')">🗑️ مسح</button></td></tr>`; });
+    document.getElementById("pkgRows").innerHTML=h||`<tr><td colspan="3" style="text-align:center;color:var(--muted)">لا توجد باقات</td></tr>`;
+  });
+}
+
+async function addPackage(){
+  const amount=Number(document.getElementById("pkgAmount").value), receive=Number(document.getElementById("pkgReceive").value);
+  if(!amount||!receive){ alert("أدخل مبلغ الاشتراك والاستلام"); return; }
+  await db.collection("packages").add({amount,receive,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  document.getElementById("pkgAmount").value=""; document.getElementById("pkgReceive").value="";
+  alert("✅ تم إضافة الباقة");
+}
+
+function deletePackage(id){ if(confirm("مسح الباقة؟")) db.collection("packages").doc(id).delete(); }
+
+function fillForm(id){
+  db.collection("deals").doc(id).get().then(doc=>{
+    if(!doc.exists) return; const d=doc.data();
+    document.getElementById("dealId").value=id;
+    document.getElementById("name").value=d.name||"";
+    document.getElementById("investment").value=d.investment||"";
+    document.getElementById("profit").value=d.profit||"";
+    document.getElementById("receipt").value=d.receipt||"";
+    document.getElementById("fees").value=d.fees||"";
+    document.getElementById("hours").value=d.deadlineMinutes||(d.deadlineHours?d.deadlineHours*60:"");
+    document.getElementById("paymentOpen").value=d.paymentOpen?"true":"false";
+    document.getElementById("dealId").scrollIntoView({behavior:"smooth",block:"center"});
+  });
+}
+
+function saveDeal(){
+  const id=document.getElementById("dealId").value.trim(); if(!id) return alert("ادخل رقم الصفقة");
+  const fees=Number(document.getElementById("fees").value), paymentOpen=document.getElementById("paymentOpen").value==="true";
+  let status="الصفقة قيد الانتظار";
+  if(fees>0&&paymentOpen) status="في انتظار سداد مبلغ الإيداع";
+  db.collection("deals").doc(id).set({dealId:id,name:document.getElementById("name").value,investment:Number(document.getElementById("investment").value),profit:Number(document.getElementById("profit").value),fees,receipt:document.getElementById("receipt").value,deadlineMinutes:Number(document.getElementById("hours").value),paymentOpen,status,source:"admin",paymentStart:firebase.firestore.FieldValue.serverTimestamp(),createdAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).then(()=>alert("✅ تم حفظ الصفقة"));
+}
+
+function deleteDeal(){
+  const id=document.getElementById("dealId").value.trim(); if(!id) return;
+  if(confirm("أرشفة الصفقة؟")) archiveDeal(id).then(()=>alert("🗄️ تم أرشفة الصفقة"));
+}
+
+async function archiveDeal(id){
+  if(!confirm("أرشفة الصفقة "+id+"؟")) return;
+  const snap=await db.collection("deals").doc(id).get(); if(!snap.exists) return;
+  await db.collection("archived_deals").doc(id).set({...snap.data(),archivedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  await db.collection("deals").doc(id).delete();
+}
+
+async function restoreDeal(id){
+  if(!confirm("استعادة الصفقة "+id+"؟")) return;
+  const snap=await db.collection("archived_deals").doc(id).get(); if(!snap.exists) return;
+  await db.collection("deals").doc(id).set(snap.data());
+  await db.collection("archived_deals").doc(id).delete();
+}
+
+function toggleArchive(){
+  const sec=document.getElementById("archSec"), lbl=document.getElementById("archTgl");
+  if(sec.style.display==="none"){ sec.style.display="block"; lbl.innerText="▲ إخفاء"; loadArchive(); }
+  else{ sec.style.display="none"; lbl.innerText="▼ عرض"; }
+}
+
+function loadArchive(){
+  db.collection("archived_deals").orderBy("archivedAt","desc").onSnapshot(snap=>{
+    let h=""; snap.forEach(doc=>{ const d=doc.data(); h+=`<tr style="opacity:.7"><td style="color:var(--muted);font-family:'Space Grotesk',sans-serif">${doc.id}</td><td>${d.name||"—"}</td><td>${d.paymentProof?`<button class="btn-view" onclick="viewProof('${d.paymentProof}')">عرض</button>`:`<span class="no-proof">—</span>`}</td><td>${d.status||"—"}</td><td><button class="btn-view" style="background:rgba(212,175,55,.08);color:var(--green);border-color:rgba(212,175,55,.22)" onclick="restoreDeal('${doc.id}')">↩️</button></td><td><button class="btn-view" style="background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.25)" onclick="if(confirm('مسح نهائي؟'))db.collection('archived_deals').doc('${doc.id}').delete()">🗑️</button></td></tr>`; });
+    document.getElementById("archRows").innerHTML=h||`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">الأرشيف فارغ</td></tr>`;
+  });
+}
+
+function viewProof(url){ document.getElementById("proofImg").src=url; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+</script>
+</body>
+</html>
